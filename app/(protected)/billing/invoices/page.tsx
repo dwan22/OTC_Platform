@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { db } from "@/lib/db"
 import { id } from "@instantdb/react"
 import { formatCurrency, formatDate } from "@/lib/utils"
-import { Plus, Save, X, CheckCircle } from "lucide-react"
+import { Plus, Save, X, CheckCircle, RotateCcw } from "lucide-react"
 import { useState } from "react"
 import { addDays } from "date-fns"
 
@@ -241,6 +241,26 @@ export default function InvoicesPage() {
     } catch (error: any) {
       console.error('Error marking invoice as paid:', error)
       alert(`Failed to mark invoice as paid: ${error.message}`)
+    }
+  }
+  
+  const handleReopenInvoice = async (invoice: any) => {
+    if (!confirm(`Reopen invoice ${invoice.invoiceNumber}?\n\nThis will change the status back to PENDING.`)) {
+      return
+    }
+    
+    try {
+      await db.transact([
+        db.tx.invoices[invoice.id].update({
+          status: 'PENDING',
+          updatedAt: Date.now(),
+        })
+      ])
+      
+      console.log('Invoice reopened successfully')
+    } catch (error: any) {
+      console.error('Error reopening invoice:', error)
+      alert(`Failed to reopen invoice: ${error.message}`)
     }
   }
   
@@ -534,16 +554,29 @@ export default function InvoicesPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {invoice.status !== 'PAID' && balance > 0 && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleMarkAsPaid(invoice)}
-                        >
-                          <CheckCircle className="h-4 w-4 mr-1" />
-                          Mark Paid
-                        </Button>
-                      )}
+                      <div className="flex gap-2">
+                        {invoice.status !== 'PAID' && balance > 0 && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleMarkAsPaid(invoice)}
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Mark Paid
+                          </Button>
+                        )}
+                        {invoice.status === 'PAID' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleReopenInvoice(invoice)}
+                            className="text-orange-600 border-orange-300 hover:bg-orange-50"
+                          >
+                            <RotateCcw className="h-4 w-4 mr-1" />
+                            Reopen
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 )
