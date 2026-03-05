@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { db } from "@/lib/db"
 import { id } from "@instantdb/react"
 import { formatCurrency, formatDate } from "@/lib/utils"
-import { Plus, Save, X, CheckCircle, RotateCcw, Ban } from "lucide-react"
+import { Plus, Save, X, CheckCircle, RotateCcw, Ban, Trash2 } from "lucide-react"
 import { useState } from "react"
 import { addDays } from "date-fns"
 
@@ -313,6 +313,33 @@ export default function InvoicesPage() {
     }
   }
   
+  const handleDeleteInvoice = async (invoice: any) => {
+    if (!confirm(`Delete invoice ${invoice.invoiceNumber}?\n\nThis action cannot be undone. The invoice and all associated payment records will be permanently deleted.`)) {
+      return
+    }
+    
+    try {
+      // Build transactions to delete invoice and all payments
+      const transactions: any[] = [
+        db.tx.invoices[invoice.id].delete()
+      ]
+      
+      // Add delete transactions for each payment
+      if (invoice.payments && invoice.payments.length > 0) {
+        invoice.payments.forEach((payment: any) => {
+          transactions.push(db.tx.payments[payment.id].delete())
+        })
+      }
+      
+      await db.transact(transactions)
+      
+      console.log('Invoice deleted successfully')
+    } catch (error: any) {
+      console.error('Error deleting invoice:', error)
+      alert(`Failed to delete invoice: ${error.message}`)
+    }
+  }
+  
   const activeInvoices = invoices.filter((inv: any) => inv.status !== 'VOID')
   
   const totalInvoiced = activeInvoices.reduce((sum: number, invoice: any) => {
@@ -394,7 +421,15 @@ export default function InvoicesPage() {
                   <Label htmlFor="contract">Contract (Optional)</Label>
                   <Select
                     value={formData.contractId}
-                    onValueChange={(value) => setFormData({ ...formData, contractId: value })}
+                    onValueChange={(value) => {
+                      const selectedContract = filteredContracts.find((c: any) => c.id === value)
+                      const tierPrice = selectedContract?.subscriptionTier?.basePrice || ''
+                      setFormData({ 
+                        ...formData, 
+                        contractId: value,
+                        amount: tierPrice ? tierPrice.toString() : formData.amount
+                      })
+                    }}
                     disabled={!formData.customerId || isSubmitting}
                   >
                     <SelectTrigger id="contract">
@@ -668,15 +703,26 @@ export default function InvoicesPage() {
                           </Button>
                         )}
                         {invoice.status !== 'VOID' && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleVoidInvoice(invoice)}
-                            className="text-red-600 border-red-300 hover:bg-red-50"
-                          >
-                            <Ban className="h-4 w-4 mr-1" />
-                            Void
-                          </Button>
+                          <>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleVoidInvoice(invoice)}
+                              className="text-orange-600 border-orange-300 hover:bg-orange-50"
+                            >
+                              <Ban className="h-4 w-4 mr-1" />
+                              Void
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDeleteInvoice(invoice)}
+                              className="text-red-600 border-red-300 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4 mr-1" />
+                              Delete
+                            </Button>
+                          </>
                         )}
                       </div>
                     </TableCell>
