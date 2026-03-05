@@ -127,17 +127,17 @@ export default function LoginPage() {
                   Verification Code
                 </label>
                 <p className="text-sm text-slate-600 mb-3">
-                  We sent a 4-digit code to <strong>{sentEmail}</strong>
+                  We sent a 6-digit code to <strong>{sentEmail}</strong>
                 </p>
                 <input
                   id="code"
                   type="text"
                   value={code}
-                  onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                  placeholder="0000"
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="000000"
                   required
-                  maxLength={4}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all text-center text-3xl tracking-[1rem] font-mono"
+                  maxLength={6}
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all text-center text-2xl tracking-widest font-mono"
                   disabled={isLoading}
                   autoFocus
                 />
@@ -145,7 +145,7 @@ export default function LoginPage() {
 
               <button
                 type="submit"
-                disabled={isLoading || code.length !== 4}
+                disabled={isLoading || code.length !== 6}
                 className="w-full bg-slate-900 text-white py-3 rounded-lg font-medium hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isLoading ? (
