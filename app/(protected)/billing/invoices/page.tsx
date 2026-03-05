@@ -205,11 +205,29 @@ export default function InvoicesPage() {
     }, 0)
     const balance = invoice.totalAmount - totalPaid
     
+    // If balance is 0 (already has payment records), just update status
     if (balance <= 0) {
-      alert('This invoice is already fully paid')
+      if (!confirm(`Mark invoice ${invoice.invoiceNumber} as PAID?\n\nThis invoice already has payment records. Status will be updated to PAID.`)) {
+        return
+      }
+      
+      try {
+        await db.transact([
+          db.tx.invoices[invoice.id].update({
+            status: 'PAID',
+            updatedAt: Date.now(),
+          })
+        ])
+        
+        console.log('Invoice status updated to PAID')
+      } catch (error: any) {
+        console.error('Error updating invoice status:', error)
+        alert(`Failed to mark invoice as paid: ${error.message}`)
+      }
       return
     }
     
+    // If there's a balance, create a payment record
     if (!confirm(`Mark invoice ${invoice.invoiceNumber} as PAID?\n\nThis will create a payment record for ${formatCurrency(balance)}`)) {
       return
     }
@@ -560,7 +578,6 @@ export default function InvoicesPage() {
                             size="sm"
                             variant="outline"
                             onClick={() => handleMarkAsPaid(invoice)}
-                            disabled={balance <= 0}
                           >
                             <CheckCircle className="h-4 w-4 mr-1" />
                             Mark Paid
