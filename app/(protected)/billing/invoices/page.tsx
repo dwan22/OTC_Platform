@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
 import { db } from "@/lib/db"
 import { id } from "@instantdb/react"
 import { formatCurrency, formatDate } from "@/lib/utils"
-import { Plus, Save, X, CheckCircle, RotateCcw, Ban, Trash2 } from "lucide-react"
+import { Plus, Save, X, CheckCircle, RotateCcw, Ban, Trash2, MoreVertical } from "lucide-react"
 import { useState } from "react"
 import { addDays } from "date-fns"
 
@@ -680,50 +681,44 @@ export default function InvoicesPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                        {invoice.status !== 'PAID' && invoice.status !== 'VOID' && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleMarkAsPaid(invoice)}
-                          >
-                            <CheckCircle className="h-4 w-4 mr-1" />
-                            Mark Paid
-                          </Button>
-                        )}
-                        {invoice.status === 'PAID' && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleReopenInvoice(invoice)}
-                            className="text-orange-600 border-orange-300 hover:bg-orange-50"
-                          >
-                            <RotateCcw className="h-4 w-4 mr-1" />
-                            Reopen
-                          </Button>
-                        )}
-                        {invoice.status !== 'VOID' && (
-                          <>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleVoidInvoice(invoice)}
-                              className="text-orange-600 border-orange-300 hover:bg-orange-50"
-                            >
-                              <Ban className="h-4 w-4 mr-1" />
-                              Void
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical className="h-4 w-4" />
                             </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleDeleteInvoice(invoice)}
-                              className="text-red-600 border-red-300 hover:bg-red-50"
-                            >
-                              <Trash2 className="h-4 w-4 mr-1" />
-                              Delete
-                            </Button>
-                          </>
-                        )}
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {invoice.status !== 'PAID' && invoice.status !== 'VOID' && (
+                              <DropdownMenuItem onClick={() => handleMarkAsPaid(invoice)}>
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                Mark Paid
+                              </DropdownMenuItem>
+                            )}
+                            {invoice.status === 'PAID' && (
+                              <DropdownMenuItem onClick={() => handleReopenInvoice(invoice)}>
+                                <RotateCcw className="h-4 w-4 mr-2" />
+                                Reopen
+                              </DropdownMenuItem>
+                            )}
+                            {invoice.status !== 'VOID' && (
+                              <>
+                                {(invoice.status !== 'PAID' || invoice.status === 'PAID') && <DropdownMenuSeparator />}
+                                <DropdownMenuItem onClick={() => handleVoidInvoice(invoice)}>
+                                  <Ban className="h-4 w-4 mr-2" />
+                                  Void
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => handleDeleteInvoice(invoice)}
+                                  className="text-red-600 focus:text-red-600"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </TableCell>
                   </TableRow>
