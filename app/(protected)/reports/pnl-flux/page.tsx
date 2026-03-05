@@ -5,10 +5,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { formatCurrency, formatPercent } from "@/lib/utils"
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { db } from "@/lib/db"
-import { useMemo } from "react"
-import { startOfMonth, endOfMonth, subMonths, format } from "date-fns"
+import { useMemo, useState } from "react"
+import { startOfMonth, endOfMonth, subMonths, addMonths, format } from "date-fns"
+import { Button } from "@/components/ui/button"
+import { X } from "lucide-react"
 
 export default function PnLFluxPage() {
+  const [selectedMonths, setSelectedMonths] = useState<string[]>([])
+  
   const { isLoading, error, data: queryData } = db.useQuery({
     contracts: {
       subscriptionTier: {},
@@ -37,35 +41,96 @@ export default function PnLFluxPage() {
     
     const currentMRR = currentARR / 12
     
-    // Calculate YTD recognized revenue from contracts (straight-line, to date)
     const today = new Date()
-    const yearStart = new Date(today.getFullYear(), 0, 1)
     
-    const totalRecognizedRevenue = activeContracts.reduce((sum: number, contract: any) => {
-      const contractStart = new Date(contract.startDate)
-      const contractEnd = new Date(contract.endDate)
-      const totalValue = contract.totalContractValue || 0
-      
-      // Calculate total contract days
-      const totalContractDays = Math.max(1, Math.floor((contractEnd.getTime() - contractStart.getTime()) / (1000 * 60 * 60 * 24)) + 1)
-      const dailyRate = totalValue / totalContractDays
-      
-      // Calculate days from contract start to today (or contract end if already ended)
-      const recognitionEnd = contractEnd < today ? contractEnd : today
-      const recognitionStart = contractStart > yearStart ? contractStart : (contractStart < yearStart ? yearStart : contractStart)
-      
-      // Only recognize if contract has started and overlaps with this year
-      if (recognitionEnd < yearStart || recognitionStart > today) {
-        return sum
-      }
-      
-      const daysRecognized = Math.max(0, Math.floor((recognitionEnd.getTime() - recognitionStart.getTime()) / (1000 * 60 * 60 * 24)) + 1)
-      const recognizedAmount = dailyRate * daysRecognized
-      
-      return sum + recognizedAmount
-    }, 0)
+    // Generate list of available months (last 12 months + next 12 months)
+    const availableMonths = []
+    for (let i = -12; i <= 12; i++) {
+      const monthDate = i < 0 ? subMonths(today, Math.abs(i)) : addMonths(today, i)
+      availableMonths.push({
+        key: format(monthDate, 'MMM yyyy'),
+        date: monthDate,
+      })
+    }
     
-    // Calculate YTD bad debt expense from outstanding invoices
+    // Calculate revenue by month for all contracts
+    const monthlyRevenueMap = new Map()
+    
+    availableMonths.forEach(({ key, date }) => {
+      const monthStart = startOfMonth(date)
+      const monthEnd = endOfMonth(date)
+      
+      let monthRevenue = 0
+      
+      activeContracts.forEach((contract: any) => {
+        const contractStart = new Date(contract.startDate)
+        const contractEnd = new Date(contract.endDate)
+        const totalValue = contract.totalContractValue || 0
+        
+        const contractStartMonth = new Date(contractStart.getFullYear(), contractStart.getMonth(), 1)
+        const contractEndMonth = new Date(contractEnd.getFullYear(), contractEnd.getMonth(), 1)
+        
+        // Skip if this month is outside the contract's service period (end date is exclusive)
+        if (monthStart < contractStartMonth || monthStart >= contractEndMonth) {
+          return
+        }
+        
+        // Calculate total months in contract
+        let totalMonths = 0
+        let currentMonth = new Date(contractStart.getFullYear(), contractStart.getMonth(), 1)
+        
+        while (currentMonth < contractEndMonth) {
+          totalMonths++
+          currentMonth = addMonths(currentMonth, 1)
+        }
+        
+        const monthlyRevenue = totalValue / totalMonths
+        monthRevenue += monthlyRevenue
+      })
+      
+      monthlyRevenueMap.set(key, monthRevenue)
+    })
+    
+    // Calculate revenue for selected months (or YTD if none selected)
+    let totalRecognizedRevenue = 0
+    let periodLabel = 'YTD'
+    
+    if (selectedMonths.length > 0) {
+      // Sum revenue for selected months only
+      selectedMonths.forEach(monthKey => {
+        totalRecognizedRevenue += monthlyRevenueMap.get(monthKey) || 0
+      })
+      periodLabel = selectedMonths.length === 1 ? selectedMonths[0] : `${selectedMonths.length} months`
+    } else {
+      // YTD calculation (Jan to current month)
+      const yearStart = new Date(today.getFullYear(), 0, 1)
+      
+      activeContracts.forEach((contract: any) => {
+        const contractStart = new Date(contract.startDate)
+        const contractEnd = new Date(contract.endDate)
+        const totalValue = contract.totalContractValue || 0
+        
+        // Calculate total contract days
+        const totalContractDays = Math.max(1, Math.floor((contractEnd.getTime() - contractStart.getTime()) / (1000 * 60 * 60 * 24)) + 1)
+        const dailyRate = totalValue / totalContractDays
+        
+        // Calculate days from contract start to today (or contract end if already ended)
+        const recognitionEnd = contractEnd < today ? contractEnd : today
+        const recognitionStart = contractStart > yearStart ? contractStart : (contractStart < yearStart ? yearStart : contractStart)
+        
+        // Only recognize if contract has started and overlaps with this year
+        if (recognitionEnd < yearStart || recognitionStart > today) {
+          return
+        }
+        
+        const daysRecognized = Math.max(0, Math.floor((recognitionEnd.getTime() - recognitionStart.getTime()) / (1000 * 60 * 60 * 24)) + 1)
+        const recognizedAmount = dailyRate * daysRecognized
+        
+        totalRecognizedRevenue += recognizedAmount
+      })
+    }
+    
+    // Calculate bad debt expense from outstanding invoices (always current snapshot)
     const outstandingInvoices = invoices.filter((inv: any) => inv.status !== 'PAID' && inv.status !== 'VOID')
     
     const agingBuckets = [
@@ -95,7 +160,7 @@ export default function PnLFluxPage() {
     
     const budgetRevenue = totalRecognizedRevenue * 0.9
     const revenueVariance = totalRecognizedRevenue - budgetRevenue
-    const revenueVariancePct = (revenueVariance / budgetRevenue) * 100
+    const revenueVariancePct = budgetRevenue > 0 ? (revenueVariance / budgetRevenue) * 100 : 0
     
     const monthlyData = []
     
@@ -132,8 +197,10 @@ export default function PnLFluxPage() {
       totalBadDebtExpense,
       grossProfit,
       operatingExpenses,
+      availableMonths,
+      periodLabel,
     }
-  }, [queryData])
+  }, [queryData, selectedMonths])
   
   if (isLoading) {
     return (
@@ -162,7 +229,19 @@ export default function PnLFluxPage() {
     )
   }
   
-  const { currentARR, arrGrowth, currentMRR, mrrGrowth, totalRecognizedRevenue, netIncome, chartData, varianceData, budgetRevenue, revenueVariance, revenueVariancePct, totalBadDebtExpense, grossProfit, operatingExpenses } = data
+  const { currentARR, arrGrowth, currentMRR, mrrGrowth, totalRecognizedRevenue, netIncome, chartData, varianceData, budgetRevenue, revenueVariance, revenueVariancePct, totalBadDebtExpense, grossProfit, operatingExpenses, availableMonths, periodLabel } = data
+  
+  const toggleMonth = (monthKey: string) => {
+    setSelectedMonths(prev => 
+      prev.includes(monthKey) 
+        ? prev.filter(m => m !== monthKey)
+        : [...prev, monthKey]
+    )
+  }
+  
+  const clearSelection = () => {
+    setSelectedMonths([])
+  }
   
   return (
     <div className="p-8">
@@ -170,6 +249,42 @@ export default function PnLFluxPage() {
         <h1 className="text-3xl font-bold text-slate-900">P&L Flux Analysis</h1>
         <p className="text-slate-600 mt-1">Budget vs actual variance analysis and performance tracking</p>
       </div>
+      
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle>Select Period</CardTitle>
+          <CardDescription>Choose specific months to analyze (or leave empty for YTD)</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {availableMonths.map(({ key }) => (
+              <Button
+                key={key}
+                variant={selectedMonths.includes(key) ? "default" : "outline"}
+                size="sm"
+                onClick={() => toggleMonth(key)}
+              >
+                {key}
+              </Button>
+            ))}
+          </div>
+          {selectedMonths.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                Selected: {selectedMonths.length} month(s)
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearSelection}
+              >
+                <X className="h-4 w-4 mr-1" />
+                Clear
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
       
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <Card>
@@ -198,11 +313,11 @@ export default function PnLFluxPage() {
         
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">YTD Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium">Revenue</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{formatCurrency(totalRecognizedRevenue)}</div>
-            <p className="text-xs text-muted-foreground mt-1">Recognized</p>
+            <p className="text-xs text-muted-foreground mt-1">{periodLabel}</p>
           </CardContent>
         </Card>
         
@@ -212,7 +327,7 @@ export default function PnLFluxPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(netIncome)}</div>
-            <p className="text-xs text-muted-foreground mt-1">YTD</p>
+            <p className="text-xs text-muted-foreground mt-1">{periodLabel}</p>
           </CardContent>
         </Card>
       </div>
@@ -262,7 +377,7 @@ export default function PnLFluxPage() {
       <Card className="mb-8">
         <CardHeader>
           <CardTitle>Income Statement</CardTitle>
-          <CardDescription>Year-to-date P&L summary</CardDescription>
+          <CardDescription>P&L summary for {periodLabel}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
