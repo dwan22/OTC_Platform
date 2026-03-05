@@ -33,7 +33,34 @@ export default function PnLFluxPage() {
     
     const currentMRR = currentARR / 12
     
-    const totalRecognizedRevenue = schedules.reduce((sum: number, s: any) => sum + s.recognizedAmount, 0)
+    // Calculate YTD recognized revenue from contracts (straight-line, to date)
+    const today = new Date()
+    const yearStart = new Date(today.getFullYear(), 0, 1)
+    
+    const totalRecognizedRevenue = activeContracts.reduce((sum: number, contract: any) => {
+      const contractStart = new Date(contract.startDate)
+      const contractEnd = new Date(contract.endDate)
+      const totalValue = contract.totalContractValue || 0
+      
+      // Calculate total contract days
+      const totalContractDays = Math.max(1, Math.floor((contractEnd.getTime() - contractStart.getTime()) / (1000 * 60 * 60 * 24)) + 1)
+      const dailyRate = totalValue / totalContractDays
+      
+      // Calculate days from contract start to today (or contract end if already ended)
+      const recognitionEnd = contractEnd < today ? contractEnd : today
+      const recognitionStart = contractStart > yearStart ? contractStart : (contractStart < yearStart ? yearStart : contractStart)
+      
+      // Only recognize if contract has started and overlaps with this year
+      if (recognitionEnd < yearStart || recognitionStart > today) {
+        return sum
+      }
+      
+      const daysRecognized = Math.max(0, Math.floor((recognitionEnd.getTime() - recognitionStart.getTime()) / (1000 * 60 * 60 * 24)) + 1)
+      const recognizedAmount = dailyRate * daysRecognized
+      
+      return sum + recognizedAmount
+    }, 0)
+    
     const totalBadDebtExpense = reserves.reduce((sum: number, r: any) => sum + r.badDebtExpense, 0)
     
     const grossProfit = totalRecognizedRevenue
@@ -44,7 +71,6 @@ export default function PnLFluxPage() {
     const revenueVariance = totalRecognizedRevenue - budgetRevenue
     const revenueVariancePct = (revenueVariance / budgetRevenue) * 100
     
-    const today = new Date()
     const monthlyData = []
     
     for (let i = 11; i >= 0; i--) {

@@ -8,6 +8,7 @@ import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, L
 import { db } from "@/lib/db"
 import { useMemo } from "react"
 import { startOfMonth, endOfMonth, subMonths, addMonths, format } from "date-fns"
+import { Info } from "lucide-react"
 
 export default function RevenueRecognitionPage() {
   const { isLoading, error, data: queryData } = db.useQuery({
@@ -98,6 +99,9 @@ export default function RevenueRecognitionPage() {
         const dailyRate = totalValue / totalContractDays
         const monthlyRevenue = dailyRate * daysInMonth
         
+        // Debug logging
+        console.log(`Contract ${contract.contractNumber}: Month ${monthKey}, Days in month: ${daysInMonth}, Daily rate: ${dailyRate.toFixed(2)}, Monthly revenue: ${monthlyRevenue.toFixed(2)}`)
+        
         monthRevenue += monthlyRevenue
       })
       
@@ -177,7 +181,15 @@ export default function RevenueRecognitionPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Total Scheduled</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-sm font-medium">Total Scheduled</CardTitle>
+              <div className="group relative">
+                <Info className="h-4 w-4 text-slate-400 cursor-help" />
+                <div className="invisible group-hover:visible absolute left-0 top-6 w-64 p-3 bg-slate-900 text-white text-xs rounded-lg shadow-lg z-10">
+                  Total contract value across all active contracts that will be recognized over time
+                </div>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(totalScheduled)}</div>
@@ -186,7 +198,15 @@ export default function RevenueRecognitionPage() {
         
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Revenue Recognized</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-sm font-medium">Revenue Recognized</CardTitle>
+              <div className="group relative">
+                <Info className="h-4 w-4 text-slate-400 cursor-help" />
+                <div className="invisible group-hover:visible absolute left-0 top-6 w-64 p-3 bg-slate-900 text-white text-xs rounded-lg shadow-lg z-10">
+                  Revenue that has been earned to date based on service delivery (straight-line recognition)
+                </div>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{formatCurrency(totalRecognized)}</div>
@@ -195,7 +215,15 @@ export default function RevenueRecognitionPage() {
         
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Deferred Revenue</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-sm font-medium">Deferred Revenue</CardTitle>
+              <div className="group relative">
+                <Info className="h-4 w-4 text-slate-400 cursor-help" />
+                <div className="invisible group-hover:visible absolute left-0 top-6 w-64 p-3 bg-slate-900 text-white text-xs rounded-lg shadow-lg z-10">
+                  Revenue that has been billed but not yet earned (liability on balance sheet)
+                </div>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">{formatCurrency(totalDeferred)}</div>
@@ -204,7 +232,15 @@ export default function RevenueRecognitionPage() {
         
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Recognition Rate</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-sm font-medium">Recognition Rate</CardTitle>
+              <div className="group relative">
+                <Info className="h-4 w-4 text-slate-400 cursor-help" />
+                <div className="invisible group-hover:visible absolute left-0 top-6 w-64 p-3 bg-slate-900 text-white text-xs rounded-lg shadow-lg z-10">
+                  Percentage of total scheduled revenue that has been recognized to date
+                </div>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
