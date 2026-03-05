@@ -11,6 +11,10 @@ import { startOfMonth, endOfMonth, subMonths, addMonths, format } from "date-fns
 
 export default function RevenueRecognitionPage() {
   const { isLoading, error, data: queryData } = db.useQuery({
+    contracts: {
+      customer: {},
+      subscriptionTier: {},
+    },
     revenueSchedules: {
       contract: {
         customer: {},
@@ -19,9 +23,42 @@ export default function RevenueRecognitionPage() {
   })
   
   const data = useMemo(() => {
-    if (!queryData?.revenueSchedules) return null
+    if (!queryData?.contracts) return null
     
-    const schedules = queryData.revenueSchedules
+    const contracts = queryData.contracts
+    const today = new Date()
+    
+    // Generate revenue schedules from contracts (straight-line based on contract dates)
+    const contractSchedules = contracts.flatMap((contract: any) => {
+      const startDate = new Date(contract.startDate)
+      const endDate = new Date(contract.endDate)
+      const totalValue = contract.totalContractValue || 0
+      
+      // Calculate total days in contract
+      const totalDays = Math.max(1, Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)))
+      
+      // Calculate daily revenue rate
+      const dailyRate = totalValue / totalDays
+      
+      // Calculate how much should be recognized so far
+      const daysPassed = Math.min(totalDays, Math.max(0, Math.floor((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))))
+      const recognizedAmount = dailyRate * daysPassed
+      const deferredAmount = totalValue - recognizedAmount
+      
+      return {
+        id: contract.id,
+        customerName: contract.customer?.companyName || 'Unknown',
+        contractNumber: contract.contractNumber,
+        periodStart: contract.startDate,
+        periodEnd: contract.endDate,
+        scheduledAmount: totalValue,
+        recognizedAmount: Math.max(0, recognizedAmount),
+        deferredAmount: Math.max(0, deferredAmount),
+        status: today > endDate ? 'RECOGNIZED' : (today < startDate ? 'PENDING' : 'IN_PROGRESS'),
+      }
+    })
+    
+    const schedules = contractSchedules
     
     const totalScheduled = schedules.reduce((sum: number, s: any) => sum + s.scheduledAmount, 0)
     const totalRecognized = schedules.reduce((sum: number, s: any) => sum + s.recognizedAmount, 0)
