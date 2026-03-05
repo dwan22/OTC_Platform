@@ -147,62 +147,74 @@ export default function DashboardPage() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900">Executive Dashboard</h1>
-        <p className="text-slate-600 mt-1">Order-to-Cash Performance Overview</p>
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Executive Dashboard</h1>
+        <p className="text-slate-600 mt-2 text-lg">Order-to-Cash Performance Overview</p>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Annual Recurring Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+        <Card className="card-hover border-0 shadow-lg overflow-hidden">
+          <div className="absolute inset-0 gradient-primary opacity-10"></div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+            <CardTitle className="text-sm font-semibold text-slate-700">Annual Recurring Revenue</CardTitle>
+            <div className="p-2 rounded-lg bg-purple-100">
+              <DollarSign className="h-5 w-5 text-purple-600" />
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(arr)}</div>
-            <p className="text-xs text-muted-foreground mt-1">
+          <CardContent className="relative">
+            <div className="text-3xl font-bold text-slate-900">{formatCurrency(arr)}</div>
+            <p className="text-sm text-slate-600 mt-2 font-medium">
               MRR: {formatCurrency(currentMRR)}
             </p>
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">MRR Growth</CardTitle>
-            {mrrGrowth >= 0 ? (
-              <TrendingUp className="h-4 w-4 text-green-600" />
-            ) : (
-              <TrendingDown className="h-4 w-4 text-red-600" />
-            )}
+        <Card className="card-hover border-0 shadow-lg overflow-hidden">
+          <div className="absolute inset-0 gradient-success opacity-10"></div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+            <CardTitle className="text-sm font-semibold text-slate-700">MRR Growth</CardTitle>
+            <div className={`p-2 rounded-lg ${mrrGrowth >= 0 ? 'bg-green-100' : 'bg-red-100'}`}>
+              {mrrGrowth >= 0 ? (
+                <TrendingUp className="h-5 w-5 text-green-600" />
+              ) : (
+                <TrendingDown className="h-5 w-5 text-red-600" />
+              )}
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${mrrGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+          <CardContent className="relative">
+            <div className={`text-3xl font-bold ${mrrGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {mrrGrowth >= 0 ? '+' : ''}{mrrGrowth.toFixed(1)}%
             </div>
-            <p className="text-xs text-muted-foreground mt-1">vs previous month</p>
+            <p className="text-sm text-slate-600 mt-2 font-medium">vs previous month</p>
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Customers</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+        <Card className="card-hover border-0 shadow-lg overflow-hidden">
+          <div className="absolute inset-0 gradient-info opacity-10"></div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+            <CardTitle className="text-sm font-semibold text-slate-700">Active Customers</CardTitle>
+            <div className="p-2 rounded-lg bg-blue-100">
+              <Users className="h-5 w-5 text-blue-600" />
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{customerCount}</div>
-            <p className="text-xs text-muted-foreground mt-1">
+          <CardContent className="relative">
+            <div className="text-3xl font-bold text-slate-900">{customerCount}</div>
+            <p className="text-sm text-slate-600 mt-2 font-medium">
               {activeContracts} active contracts
             </p>
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total AR</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
+        <Card className="card-hover border-0 shadow-lg overflow-hidden">
+          <div className="absolute inset-0 gradient-warning opacity-10"></div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+            <CardTitle className="text-sm font-semibold text-slate-700">Total AR</CardTitle>
+            <div className="p-2 rounded-lg bg-orange-100">
+              <FileText className="h-5 w-5 text-orange-600" />
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalAR)}</div>
-            <p className="text-xs text-red-600 mt-1">
+          <CardContent className="relative">
+            <div className="text-3xl font-bold text-slate-900">{formatCurrency(totalAR)}</div>
+            <p className="text-sm text-red-600 mt-2 font-semibold">
               Reserve: {formatCurrency(totalReserve)}
             </p>
           </CardContent>
@@ -210,10 +222,10 @@ export default function DashboardPage() {
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <Card>
+        <Card className="border-0 shadow-lg">
           <CardHeader>
-            <CardTitle>MRR Trend (Last 6 Months)</CardTitle>
-            <CardDescription>Monthly Recurring Revenue growth</CardDescription>
+            <CardTitle className="text-xl font-bold text-slate-900">MRR Trend (Last 6 Months)</CardTitle>
+            <CardDescription className="text-slate-600">Monthly Recurring Revenue growth</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -229,10 +241,10 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="border-0 shadow-lg">
           <CardHeader>
-            <CardTitle>AR Aging Analysis</CardTitle>
-            <CardDescription>Outstanding receivables by aging bucket</CardDescription>
+            <CardTitle className="text-xl font-bold text-slate-900">AR Aging Analysis</CardTitle>
+            <CardDescription className="text-slate-600">Outstanding receivables by aging bucket</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -251,54 +263,54 @@ export default function DashboardPage() {
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
+        <Card className="border-0 shadow-lg">
           <CardHeader>
-            <CardTitle>Key Metrics</CardTitle>
-            <CardDescription>Financial health indicators</CardDescription>
+            <CardTitle className="text-xl font-bold text-slate-900">Key Metrics</CardTitle>
+            <CardDescription className="text-slate-600">Financial health indicators</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Deferred Revenue</span>
-                <span className="text-sm font-bold">{formatCurrency(deferredRevenue)}</span>
+              <div className="flex justify-between items-center p-3 rounded-lg bg-gradient-to-r from-purple-50 to-pink-50">
+                <span className="text-sm font-semibold text-slate-700">Deferred Revenue</span>
+                <span className="text-base font-bold text-slate-900">{formatCurrency(deferredRevenue)}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">AR Reserve Coverage</span>
-                <span className="text-sm font-bold">
+              <div className="flex justify-between items-center p-3 rounded-lg bg-gradient-to-r from-blue-50 to-cyan-50">
+                <span className="text-sm font-semibold text-slate-700">AR Reserve Coverage</span>
+                <span className="text-base font-bold text-slate-900">
                   {((totalReserve / totalAR) * 100).toFixed(1)}%
                 </span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Days Sales Outstanding</span>
-                <span className="text-sm font-bold">32 days</span>
+              <div className="flex justify-between items-center p-3 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50">
+                <span className="text-sm font-semibold text-slate-700">Days Sales Outstanding</span>
+                <span className="text-base font-bold text-slate-900">32 days</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Collection Rate</span>
-                <span className="text-sm font-bold text-green-600">94.2%</span>
+              <div className="flex justify-between items-center p-3 rounded-lg bg-gradient-to-r from-orange-50 to-amber-50">
+                <span className="text-sm font-semibold text-slate-700">Collection Rate</span>
+                <span className="text-base font-bold text-green-600">94.2%</span>
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="border-0 shadow-lg">
           <CardHeader>
-            <CardTitle>Recent Invoices</CardTitle>
-            <CardDescription>Latest billing activity</CardDescription>
+            <CardTitle className="text-xl font-bold text-slate-900">Recent Invoices</CardTitle>
+            <CardDescription className="text-slate-600">Latest billing activity</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {recentInvoices.map((invoice: any) => (
-                <div key={invoice.id} className="flex justify-between items-center py-2 border-b last:border-0">
+                <div key={invoice.id} className="flex justify-between items-center p-3 rounded-lg hover:bg-slate-50 transition-colors border border-slate-100">
                   <div>
-                    <div className="text-sm font-medium">{invoice.customerName}</div>
-                    <div className="text-xs text-muted-foreground">{invoice.invoiceNumber}</div>
+                    <div className="text-sm font-semibold text-slate-900">{invoice.customerName}</div>
+                    <div className="text-xs text-slate-500 font-medium">{invoice.invoiceNumber}</div>
                   </div>
                   <div className="text-right">
-                    <div className="text-sm font-bold">{formatCurrency(invoice.totalAmount)}</div>
-                    <div className={`text-xs ${
+                    <div className="text-sm font-bold text-slate-900">{formatCurrency(invoice.totalAmount)}</div>
+                    <div className={`text-xs font-semibold ${
                       invoice.status === 'PAID' ? 'text-green-600' :
                       invoice.status === 'OVERDUE' ? 'text-red-600' :
-                      'text-yellow-600'
+                      'text-orange-600'
                     }`}>
                       {invoice.status}
                     </div>

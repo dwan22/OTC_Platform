@@ -180,109 +180,120 @@ export default function RevenueRecognitionPage() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900">Revenue Recognition</h1>
-        <p className="text-slate-600 mt-1">ASC 606 compliant revenue recognition tracking</p>
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Revenue Recognition</h1>
+        <p className="text-slate-600 mt-2 text-lg">ASC 606 compliant revenue recognition tracking</p>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <Card>
-          <CardHeader className="pb-3">
+        <Card className="card-hover border-0 shadow-lg overflow-hidden">
+          <div className="absolute inset-0 gradient-primary opacity-10"></div>
+          <CardHeader className="pb-3 relative">
             <div className="flex items-center gap-2">
-              <CardTitle className="text-sm font-medium">Total Scheduled</CardTitle>
+              <CardTitle className="text-sm font-semibold text-slate-700">Total Scheduled</CardTitle>
               <div className="group relative">
-                <Info className="h-4 w-4 text-slate-400 cursor-help" />
+                <Info className="h-4 w-4 text-purple-400 cursor-help" />
                 <div className="invisible group-hover:visible absolute left-0 top-6 w-64 p-3 bg-slate-900 text-white text-xs rounded-lg shadow-lg z-10">
                   Total contract value across all active contracts that will be recognized over time
                 </div>
               </div>
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalScheduled)}</div>
+          <CardContent className="relative">
+            <div className="text-3xl font-bold text-slate-900">{formatCurrency(totalScheduled)}</div>
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader className="pb-3">
+        <Card className="card-hover border-0 shadow-lg overflow-hidden">
+          <div className="absolute inset-0 gradient-success opacity-10"></div>
+          <CardHeader className="pb-3 relative">
             <div className="flex items-center gap-2">
-              <CardTitle className="text-sm font-medium">Revenue Recognized</CardTitle>
+              <CardTitle className="text-sm font-semibold text-slate-700">Revenue Recognized</CardTitle>
               <div className="group relative">
-                <Info className="h-4 w-4 text-slate-400 cursor-help" />
+                <Info className="h-4 w-4 text-green-400 cursor-help" />
                 <div className="invisible group-hover:visible absolute left-0 top-6 w-64 p-3 bg-slate-900 text-white text-xs rounded-lg shadow-lg z-10">
                   Revenue that has been earned to date based on service delivery (straight-line recognition)
                 </div>
               </div>
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{formatCurrency(totalRecognized)}</div>
+          <CardContent className="relative">
+            <div className="text-3xl font-bold text-green-600">{formatCurrency(totalRecognized)}</div>
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader className="pb-3">
+        <Card className="card-hover border-0 shadow-lg overflow-hidden">
+          <div className="absolute inset-0 gradient-info opacity-10"></div>
+          <CardHeader className="pb-3 relative">
             <div className="flex items-center gap-2">
-              <CardTitle className="text-sm font-medium">Deferred Revenue</CardTitle>
+              <CardTitle className="text-sm font-semibold text-slate-700">Deferred Revenue</CardTitle>
               <div className="group relative">
-                <Info className="h-4 w-4 text-slate-400 cursor-help" />
+                <Info className="h-4 w-4 text-blue-400 cursor-help" />
                 <div className="invisible group-hover:visible absolute left-0 top-6 w-64 p-3 bg-slate-900 text-white text-xs rounded-lg shadow-lg z-10">
                   Revenue that has been billed but not yet earned (liability on balance sheet)
                 </div>
               </div>
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{formatCurrency(totalDeferred)}</div>
+          <CardContent className="relative">
+            <div className="text-3xl font-bold text-blue-600">{formatCurrency(totalDeferred)}</div>
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader className="pb-3">
+        <Card className="card-hover border-0 shadow-lg overflow-hidden">
+          <div className="absolute inset-0 gradient-warning opacity-10"></div>
+          <CardHeader className="pb-3 relative">
             <div className="flex items-center gap-2">
-              <CardTitle className="text-sm font-medium">Recognition Rate</CardTitle>
+              <CardTitle className="text-sm font-semibold text-slate-700">Recognition Rate</CardTitle>
               <div className="group relative">
-                <Info className="h-4 w-4 text-slate-400 cursor-help" />
+                <Info className="h-4 w-4 text-orange-400 cursor-help" />
                 <div className="invisible group-hover:visible absolute left-0 top-6 w-64 p-3 bg-slate-900 text-white text-xs rounded-lg shadow-lg z-10">
                   Percentage of total scheduled revenue that has been recognized to date
                 </div>
               </div>
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className="relative">
+            <div className="text-3xl font-bold text-slate-900">
               {((totalRecognized / totalScheduled) * 100).toFixed(1)}%
             </div>
           </CardContent>
         </Card>
       </div>
       
-      <Card className="mb-8">
+      <Card className="mb-8 border-0 shadow-lg">
         <CardHeader>
-          <CardTitle>Revenue Recognition Trend</CardTitle>
-          <CardDescription>Historical, current, and forecasted revenue by month</CardDescription>
+          <CardTitle className="text-xl font-bold text-slate-900">Revenue Recognition Trend</CardTitle>
+          <CardDescription className="text-slate-600">Historical, current, and forecasted revenue by month</CardDescription>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={monthlyData}>
-              <CartesianGrid strokeDasharray="3 3" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
               <XAxis dataKey="month" angle={-45} textAnchor="end" height={80} />
               <YAxis />
               <Tooltip formatter={(value) => formatCurrency(Number(value))} />
               <Legend />
               <Bar 
                 dataKey="revenue" 
-                fill="#3b82f6"
+                fill="url(#colorRevenue)"
                 name="Monthly Revenue"
+                radius={[8, 8, 0, 0]}
               />
+              <defs>
+                <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.8}/>
+                  <stop offset="100%" stopColor="#d946ef" stopOpacity={0.6}/>
+                </linearGradient>
+              </defs>
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
       
-      <Card className="mb-8">
+      <Card className="mb-8 border-0 shadow-lg">
         <CardHeader>
-          <CardTitle>Monthly Revenue Waterfall</CardTitle>
-          <CardDescription>Revenue earned and forecasted by month</CardDescription>
+          <CardTitle className="text-xl font-bold text-slate-900">Monthly Revenue Waterfall</CardTitle>
+          <CardDescription className="text-slate-600">Revenue earned and forecasted by month</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -329,10 +340,10 @@ export default function RevenueRecognitionPage() {
         </CardContent>
       </Card>
       
-      <Card>
+      <Card className="border-0 shadow-lg">
         <CardHeader>
-          <CardTitle>Revenue Schedule Detail</CardTitle>
-          <CardDescription>Performance obligation tracking</CardDescription>
+          <CardTitle className="text-xl font-bold text-slate-900">Revenue Schedule Detail</CardTitle>
+          <CardDescription className="text-slate-600">Performance obligation tracking</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>

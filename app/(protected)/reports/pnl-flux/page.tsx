@@ -247,14 +247,14 @@ export default function PnLFluxPage() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900">P&L Flux Analysis</h1>
-        <p className="text-slate-600 mt-1">Budget vs actual variance analysis and performance tracking</p>
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">P&L Flux Analysis</h1>
+        <p className="text-slate-600 mt-2 text-lg">Budget vs actual variance analysis and performance tracking</p>
       </div>
       
-      <Card className="mb-8">
+      <Card className="mb-8 border-0 shadow-lg">
         <CardHeader>
-          <CardTitle>Select Period</CardTitle>
-          <CardDescription>Choose specific months to analyze (or leave empty for YTD)</CardDescription>
+          <CardTitle className="text-lg font-bold text-slate-900">Select Period</CardTitle>
+          <CardDescription className="text-slate-600">Choose specific months to analyze (or leave empty for YTD)</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-3">
@@ -301,97 +301,107 @@ export default function PnLFluxPage() {
       </Card>
       
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Current ARR</CardTitle>
+        <Card className="card-hover border-0 shadow-lg overflow-hidden">
+          <div className="absolute inset-0 gradient-primary opacity-10"></div>
+          <CardHeader className="pb-3 relative">
+            <CardTitle className="text-sm font-semibold text-slate-700">Current ARR</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(currentARR)}</div>
-            <p className={`text-xs mt-1 ${arrGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+          <CardContent className="relative">
+            <div className="text-3xl font-bold text-slate-900">{formatCurrency(currentARR)}</div>
+            <p className={`text-sm mt-2 font-semibold ${arrGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {arrGrowth >= 0 ? '+' : ''}{arrGrowth.toFixed(1)}% MoM
             </p>
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Current MRR</CardTitle>
+        <Card className="card-hover border-0 shadow-lg overflow-hidden">
+          <div className="absolute inset-0 gradient-info opacity-10"></div>
+          <CardHeader className="pb-3 relative">
+            <CardTitle className="text-sm font-semibold text-slate-700">Current MRR</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(currentMRR)}</div>
-            <p className={`text-xs mt-1 ${mrrGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+          <CardContent className="relative">
+            <div className="text-3xl font-bold text-slate-900">{formatCurrency(currentMRR)}</div>
+            <p className={`text-sm mt-2 font-semibold ${mrrGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {mrrGrowth >= 0 ? '+' : ''}{mrrGrowth.toFixed(1)}% MoM
             </p>
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Revenue</CardTitle>
+        <Card className="card-hover border-0 shadow-lg overflow-hidden">
+          <div className="absolute inset-0 gradient-success opacity-10"></div>
+          <CardHeader className="pb-3 relative">
+            <CardTitle className="text-sm font-semibold text-slate-700">Revenue</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{formatCurrency(totalRecognizedRevenue)}</div>
-            <p className="text-xs text-muted-foreground mt-1">{periodLabel}</p>
+          <CardContent className="relative">
+            <div className="text-3xl font-bold text-green-600">{formatCurrency(totalRecognizedRevenue)}</div>
+            <p className="text-sm text-slate-600 mt-2 font-medium">{periodLabel}</p>
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Net Income</CardTitle>
+        <Card className="card-hover border-0 shadow-lg overflow-hidden">
+          <div className="absolute inset-0 gradient-warning opacity-10"></div>
+          <CardHeader className="pb-3 relative">
+            <CardTitle className="text-sm font-semibold text-slate-700">Net Income</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(netIncome)}</div>
-            <p className="text-xs text-muted-foreground mt-1">{periodLabel}</p>
+          <CardContent className="relative">
+            <div className="text-3xl font-bold text-slate-900">{formatCurrency(netIncome)}</div>
+            <p className="text-sm text-slate-600 mt-2 font-medium">{periodLabel}</p>
           </CardContent>
         </Card>
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <Card>
+        <Card className="border-0 shadow-lg">
           <CardHeader>
-            <CardTitle>MRR: Budget vs Actual</CardTitle>
-            <CardDescription>Monthly performance comparison (last 12 months)</CardDescription>
+            <CardTitle className="text-xl font-bold text-slate-900">MRR: Budget vs Actual</CardTitle>
+            <CardDescription className="text-slate-600">Monthly performance comparison (last 12 months)</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                 <XAxis dataKey="month" />
                 <YAxis />
                 <Tooltip formatter={(value) => formatCurrency(Number(value))} />
                 <Legend />
-                <Line type="monotone" dataKey="Budget" stroke="#94a3b8" strokeWidth={2} strokeDasharray="5 5" />
-                <Line type="monotone" dataKey="Actual" stroke="#3b82f6" strokeWidth={2} />
+                <Line type="monotone" dataKey="Budget" stroke="#94a3b8" strokeWidth={3} strokeDasharray="5 5" />
+                <Line type="monotone" dataKey="Actual" stroke="#8b5cf6" strokeWidth={3} />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="border-0 shadow-lg">
           <CardHeader>
-            <CardTitle>Variance Analysis</CardTitle>
-            <CardDescription>Budget vs actual by category</CardDescription>
+            <CardTitle className="text-xl font-bold text-slate-900">Variance Analysis</CardTitle>
+            <CardDescription className="text-slate-600">Budget vs actual by category</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={varianceData}>
-                <CartesianGrid strokeDasharray="3 3" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                 <XAxis dataKey="category" />
                 <YAxis />
                 <Tooltip formatter={(value) => formatCurrency(Number(value))} />
                 <Legend />
-                <Bar dataKey="budget" fill="#94a3b8" name="Budget" />
-                <Bar dataKey="actual" fill="#3b82f6" name="Actual" />
+                <Bar dataKey="budget" fill="#94a3b8" name="Budget" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="actual" fill="url(#colorActual)" name="Actual" radius={[8, 8, 0, 0]} />
+                <defs>
+                  <linearGradient id="colorActual" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.8}/>
+                    <stop offset="100%" stopColor="#d946ef" stopOpacity={0.6}/>
+                  </linearGradient>
+                </defs>
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
       
-      <Card className="mb-8">
+      <Card className="mb-8 border-0 shadow-lg">
         <CardHeader>
-          <CardTitle>Income Statement</CardTitle>
-          <CardDescription>P&L summary for {periodLabel}</CardDescription>
+          <CardTitle className="text-xl font-bold text-slate-900">Income Statement</CardTitle>
+          <CardDescription className="text-slate-600">P&L summary for {periodLabel}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -459,10 +469,10 @@ export default function PnLFluxPage() {
         </CardContent>
       </Card>
       
-      <Card>
+      <Card className="border-0 shadow-lg">
         <CardHeader>
-          <CardTitle>Budget Variance Detail</CardTitle>
-          <CardDescription>Line-by-line variance analysis</CardDescription>
+          <CardTitle className="text-xl font-bold text-slate-900">Budget Variance Detail</CardTitle>
+          <CardDescription className="text-slate-600">Line-by-line variance analysis</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
