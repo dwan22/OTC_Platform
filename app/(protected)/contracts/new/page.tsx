@@ -67,7 +67,8 @@ export default function NewContractPage() {
       const formData = new FormData(e.currentTarget)
       
       const quantity = parseInt(formData.get('quantity') as string) || 1
-      const startDate = new Date(formData.get('startDate') as string)
+      const startDateStr = formData.get('startDate') as string
+      const startDate = new Date(startDateStr + 'T00:00:00')
       const contractLength = parseInt(formData.get('contractLength') as string) || 12
       const endDate = addMonths(startDate, contractLength)
       
