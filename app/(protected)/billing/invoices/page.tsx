@@ -13,6 +13,7 @@ import { formatCurrency, formatDate } from "@/lib/utils"
 import { Plus, Save, X, CheckCircle, RotateCcw } from "lucide-react"
 import { useState } from "react"
 import { addDays } from "date-fns"
+import { DeletePaymentsUtility } from "./delete-payments"
 
 export default function InvoicesPage() {
   const [isCreating, setIsCreating] = useState(false)
@@ -291,6 +292,8 @@ export default function InvoicesPage() {
   
   return (
     <div className="p-8">
+      <DeletePaymentsUtility />
+      
       <div className="mb-8 flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Invoices</h1>
