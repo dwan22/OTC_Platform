@@ -88,19 +88,21 @@ export default function RevenueRecognitionPage() {
           return
         }
         
-        // Calculate days in this month that the contract is active
-        const effectiveStart = contractStart > monthStart ? contractStart : monthStart
-        const effectiveEnd = contractEnd < monthEnd ? contractEnd : monthEnd
+        // Calculate total months in contract (using month boundaries, not days)
+        let totalMonths = 0
+        let currentMonth = new Date(contractStart.getFullYear(), contractStart.getMonth(), 1)
+        const contractEndMonth = new Date(contractEnd.getFullYear(), contractEnd.getMonth(), 1)
         
-        const daysInMonth = Math.max(1, Math.floor((effectiveEnd.getTime() - effectiveStart.getTime()) / (1000 * 60 * 60 * 24)) + 1)
-        const totalContractDays = Math.max(1, Math.floor((contractEnd.getTime() - contractStart.getTime()) / (1000 * 60 * 60 * 24)) + 1)
+        while (currentMonth <= contractEndMonth) {
+          totalMonths++
+          currentMonth = addMonths(currentMonth, 1)
+        }
         
-        // Calculate pro-rated revenue for this month
-        const dailyRate = totalValue / totalContractDays
-        const monthlyRevenue = dailyRate * daysInMonth
+        // Monthly revenue is total value divided by total months
+        const monthlyRevenue = totalValue / totalMonths
         
         // Debug logging
-        console.log(`Contract ${contract.contractNumber}: Month ${monthKey}, Days in month: ${daysInMonth}, Daily rate: ${dailyRate.toFixed(2)}, Monthly revenue: ${monthlyRevenue.toFixed(2)}`)
+        console.log(`Contract ${contract.contractNumber}: Month ${monthKey}, Total months: ${totalMonths}, Monthly revenue: ${monthlyRevenue.toFixed(2)}`)
         
         monthRevenue += monthlyRevenue
       })
