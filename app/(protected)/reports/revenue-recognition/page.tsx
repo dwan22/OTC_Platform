@@ -83,16 +83,19 @@ export default function RevenueRecognitionPage() {
         const contractEnd = new Date(contract.endDate)
         const totalValue = contract.totalContractValue || 0
         
-        // Skip if contract doesn't overlap with this month
-        if (contractEnd < monthStart || contractStart > monthEnd) {
+        // Contract end date is exclusive - if contract ends Oct 1, last service month is Sept
+        const contractStartMonth = new Date(contractStart.getFullYear(), contractStart.getMonth(), 1)
+        const contractEndMonth = new Date(contractEnd.getFullYear(), contractEnd.getMonth(), 1)
+        
+        // Skip if this month is outside the contract's service period
+        // monthStart must be >= contractStartMonth AND < contractEndMonth (exclusive end)
+        if (monthStart < contractStartMonth || monthStart >= contractEndMonth) {
           return
         }
         
         // Calculate total months in contract (using month boundaries, not days)
-        // Contract end date is exclusive - if contract ends Oct 1, last service month is Sept
         let totalMonths = 0
         let currentMonth = new Date(contractStart.getFullYear(), contractStart.getMonth(), 1)
-        const contractEndMonth = new Date(contractEnd.getFullYear(), contractEnd.getMonth(), 1)
         
         while (currentMonth < contractEndMonth) {
           totalMonths++
