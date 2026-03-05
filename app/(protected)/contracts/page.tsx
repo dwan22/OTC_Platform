@@ -4,12 +4,50 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
 import { db } from "@/lib/db"
 import { formatCurrency, formatDate } from "@/lib/utils"
 import Link from "next/link"
-import { Plus } from "lucide-react"
+import { Plus, MoreVertical, Ban, Trash2 } from "lucide-react"
 
 export default function ContractsPage() {
+  const handleVoidContract = async (contract: any) => {
+    if (!confirm(`Void contract ${contract.contractNumber}?\n\nThis will exclude the contract from all financial reporting and revenue recognition.`)) {
+      return
+    }
+    
+    try {
+      await db.transact([
+        db.tx.contracts[contract.id].update({
+          status: 'VOID',
+          updatedAt: Date.now(),
+        })
+      ])
+      
+      console.log('Contract voided successfully')
+    } catch (error: any) {
+      console.error('Error voiding contract:', error)
+      alert(`Failed to void contract: ${error.message}`)
+    }
+  }
+  
+  const handleDeleteContract = async (contract: any) => {
+    if (!confirm(`Delete contract ${contract.contractNumber}?\n\nThis action cannot be undone. The contract will be permanently deleted.`)) {
+      return
+    }
+    
+    try {
+      await db.transact([
+        db.tx.contracts[contract.id].delete()
+      ])
+      
+      console.log('Contract deleted successfully')
+    } catch (error: any) {
+      console.error('Error deleting contract:', error)
+      alert(`Failed to delete contract: ${error.message}`)
+    }
+  }
+
   const { isLoading, error, data } = db.useQuery({
     contracts: {
       customer: {},
@@ -92,14 +130,47 @@ export default function ContractsPage() {
                   <TableCell>{contract.quantity}</TableCell>
                   <TableCell>{formatCurrency(contract.totalContractValue)}</TableCell>
                   <TableCell>
-                    <Badge variant={contract.status === 'ACTIVE' ? 'default' : 'secondary'}>
+                    <Badge variant={
+                      contract.status === 'ACTIVE' ? 'default' : 
+                      contract.status === 'VOID' ? 'outline' :
+                      'secondary'
+                    }
+                    className={contract.status === 'VOID' ? 'text-red-600 border-red-300' : ''}
+                    >
                       {contract.status}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Link href={`/contracts/${contract.id}`}>
-                      <Button variant="outline" size="sm">View</Button>
-                    </Link>
+                    <div className="flex gap-2">
+                      <Link href={`/contracts/${contract.id}`}>
+                        <Button variant="outline" size="sm">View</Button>
+                      </Link>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {contract.status !== 'VOID' && (
+                            <>
+                              <DropdownMenuItem onClick={() => handleVoidContract(contract)}>
+                                <Ban className="h-4 w-4 mr-2" />
+                                Void
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                            </>
+                          )}
+                          <DropdownMenuItem 
+                            onClick={() => handleDeleteContract(contract)}
+                            className="text-red-600 focus:text-red-600"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

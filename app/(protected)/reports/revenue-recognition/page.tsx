@@ -25,7 +25,8 @@ export default function RevenueRecognitionPage() {
   const data = useMemo(() => {
     if (!queryData?.contracts) return null
     
-    const contracts = queryData.contracts
+    const allContracts = queryData.contracts
+    const contracts = allContracts.filter((c: any) => c.status !== 'VOID')
     const today = new Date()
     
     // Generate revenue schedules from contracts (straight-line based on contract dates)

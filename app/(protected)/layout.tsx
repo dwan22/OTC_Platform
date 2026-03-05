@@ -27,6 +27,13 @@ export default function ProtectedLayout({
               <span>Dashboard</span>
             </Link>
             <Link
+              href="/tiers"
+              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 transition-colors mb-1"
+            >
+              <Settings className="h-5 w-5" />
+              <span>Subscription Tiers</span>
+            </Link>
+            <Link
               href="/customers"
               className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 transition-colors mb-1"
             >
@@ -39,13 +46,6 @@ export default function ProtectedLayout({
             >
               <FileText className="h-5 w-5" />
               <span>Contracts</span>
-            </Link>
-            <Link
-              href="/tiers"
-              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 transition-colors mb-1"
-            >
-              <Settings className="h-5 w-5" />
-              <span>Subscription Tiers</span>
             </Link>
             <Link
               href="/billing/invoices"
