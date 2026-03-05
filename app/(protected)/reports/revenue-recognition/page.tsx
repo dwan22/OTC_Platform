@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { formatCurrency, formatDate } from "@/lib/utils"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { db } from "@/lib/db"
 import { useMemo } from "react"
 import { startOfMonth, endOfMonth, subMonths, addMonths, format } from "date-fns"
@@ -64,27 +64,53 @@ export default function RevenueRecognitionPage() {
     const totalRecognized = schedules.reduce((sum: number, s: any) => sum + s.recognizedAmount, 0)
     const totalDeferred = schedules.reduce((sum: number, s: any) => sum + s.deferredAmount, 0)
     
+    // Calculate monthly revenue waterfall
     const monthlyMap = new Map()
     
-    for (let i = -6; i <= 5; i++) {
+    for (let i = -6; i <= 11; i++) {
       const monthDate = i < 0 ? subMonths(today, Math.abs(i)) : addMonths(today, i)
       const monthStart = startOfMonth(monthDate)
       const monthEnd = endOfMonth(monthDate)
       const monthKey = format(monthDate, 'MMM yyyy')
       
-      const monthSchedules = schedules.filter((s: any) => {
-        const periodStart = new Date(s.periodStart)
-        return periodStart >= monthStart && periodStart <= monthEnd
+      let monthRevenue = 0
+      
+      // Calculate revenue for this month from all active contracts
+      contracts.forEach((contract: any) => {
+        const contractStart = new Date(contract.startDate)
+        const contractEnd = new Date(contract.endDate)
+        const totalValue = contract.totalContractValue || 0
+        
+        // Skip if contract doesn't overlap with this month
+        if (contractEnd < monthStart || contractStart > monthEnd) {
+          return
+        }
+        
+        // Calculate days in this month that the contract is active
+        const effectiveStart = contractStart > monthStart ? contractStart : monthStart
+        const effectiveEnd = contractEnd < monthEnd ? contractEnd : monthEnd
+        
+        const daysInMonth = Math.max(1, Math.floor((effectiveEnd.getTime() - effectiveStart.getTime()) / (1000 * 60 * 60 * 24)) + 1)
+        const totalContractDays = Math.max(1, Math.floor((contractEnd.getTime() - contractStart.getTime()) / (1000 * 60 * 60 * 24)) + 1)
+        
+        // Calculate pro-rated revenue for this month
+        const dailyRate = totalValue / totalContractDays
+        const monthlyRevenue = dailyRate * daysInMonth
+        
+        monthRevenue += monthlyRevenue
       })
       
-      const isPast = i < 0
-      const isCurrent = i === 0
+      const isPast = monthEnd < today
+      const isCurrent = monthStart <= today && monthEnd >= today
+      const isFuture = monthStart > today
       
       monthlyMap.set(monthKey, {
         month: monthKey,
-        Recognized: isPast || isCurrent ? monthSchedules.reduce((sum: number, s: any) => sum + s.recognizedAmount, 0) : 0,
-        Deferred: monthSchedules.reduce((sum: number, s: any) => sum + s.deferredAmount, 0),
-        type: isPast ? 'past' : (isCurrent ? 'current' : 'future'),
+        revenue: monthRevenue,
+        type: isPast ? 'Recognized' : (isCurrent ? 'Current' : 'Forecasted'),
+        isPast,
+        isCurrent,
+        isFuture,
       })
     }
     
@@ -190,20 +216,73 @@ export default function RevenueRecognitionPage() {
       <Card className="mb-8">
         <CardHeader>
           <CardTitle>Revenue Recognition Trend</CardTitle>
-          <CardDescription>Past 6 months (recognized) and upcoming 6 months (deferred)</CardDescription>
+          <CardDescription>Historical, current, and forecasted revenue by month</CardDescription>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={monthlyData}>
+            <BarChart data={monthlyData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
+              <XAxis dataKey="month" angle={-45} textAnchor="end" height={80} />
               <YAxis />
               <Tooltip formatter={(value) => formatCurrency(Number(value))} />
               <Legend />
-              <Line type="monotone" dataKey="Recognized" stroke="#10b981" strokeWidth={2} name="Recognized (Past)" />
-              <Line type="monotone" dataKey="Deferred" stroke="#3b82f6" strokeWidth={2} name="Deferred (Future)" />
-            </LineChart>
+              <Bar 
+                dataKey="revenue" 
+                fill="#3b82f6"
+                name="Monthly Revenue"
+              />
+            </BarChart>
           </ResponsiveContainer>
+        </CardContent>
+      </Card>
+      
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle>Monthly Revenue Waterfall</CardTitle>
+          <CardDescription>Revenue earned and forecasted by month</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Month</TableHead>
+                <TableHead className="text-right">Revenue</TableHead>
+                <TableHead>Type</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {monthlyData.map((month: any) => (
+                <TableRow key={month.month} className={month.isCurrent ? 'bg-blue-50' : ''}>
+                  <TableCell className="font-medium">{month.month}</TableCell>
+                  <TableCell className="text-right font-medium">
+                    {formatCurrency(month.revenue)}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={
+                      month.isPast ? 'default' :
+                      month.isCurrent ? 'secondary' :
+                      'outline'
+                    }
+                    className={
+                      month.isPast ? 'bg-green-600' :
+                      month.isCurrent ? 'bg-blue-600 text-white' :
+                      'text-slate-600 border-slate-300'
+                    }
+                    >
+                      {month.type}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+              <TableRow className="font-bold bg-slate-50">
+                <TableCell>Total</TableCell>
+                <TableCell className="text-right">
+                  {formatCurrency(monthlyData.reduce((sum: number, m: any) => sum + m.revenue, 0))}
+                </TableCell>
+                <TableCell>-</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
       
