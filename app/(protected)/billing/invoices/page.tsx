@@ -555,11 +555,12 @@ export default function InvoicesPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        {invoice.status !== 'PAID' && balance > 0 && (
+                        {invoice.status !== 'PAID' && (
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => handleMarkAsPaid(invoice)}
+                            disabled={balance <= 0}
                           >
                             <CheckCircle className="h-4 w-4 mr-1" />
                             Mark Paid

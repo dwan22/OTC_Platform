@@ -34,6 +34,12 @@ export default function ARAgingPage() {
       const bucketInvoices = outstandingInvoices.filter((inv: any) => {
         const dueDate = new Date(inv.dueDate)
         const daysOverdue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24))
+        
+        // Debug logging
+        if (inv.invoiceNumber && inv.invoiceNumber.includes('2025')) {
+          console.log(`Invoice ${inv.invoiceNumber}: Due ${dueDate.toLocaleDateString()}, Days overdue: ${daysOverdue}, Bucket: ${bucket.bucket}`)
+        }
+        
         return daysOverdue >= bucket.min && daysOverdue <= bucket.max
       })
       
