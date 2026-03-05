@@ -641,7 +641,7 @@ export default function InvoicesPage() {
                       }
                       className={invoice.status === 'VOID' ? 'text-red-600 border-red-300' : ''}
                       >
-                        {invoice.status}
+                        {invoice.status === 'PENDING' ? 'OUTSTANDING' : invoice.status}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -724,9 +724,12 @@ export default function InvoicesPage() {
                     <Badge variant={
                       selectedInvoice.status === 'PAID' ? 'default' :
                       selectedInvoice.status === 'OVERDUE' ? 'destructive' :
+                      selectedInvoice.status === 'VOID' ? 'outline' :
                       'secondary'
-                    }>
-                      {selectedInvoice.status}
+                    }
+                    className={selectedInvoice.status === 'VOID' ? 'text-red-600 border-red-300' : ''}
+                    >
+                      {selectedInvoice.status === 'PENDING' ? 'OUTSTANDING' : selectedInvoice.status}
                     </Badge>
                   </div>
                 </div>
