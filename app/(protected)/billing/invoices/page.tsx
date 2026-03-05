@@ -205,11 +205,29 @@ export default function InvoicesPage() {
     }, 0)
     const balance = invoice.totalAmount - totalPaid
     
+    // If balance is 0 or negative, just update status (payment records already exist)
     if (balance <= 0) {
-      alert('This invoice is already fully paid')
+      if (!confirm(`Mark invoice ${invoice.invoiceNumber} as PAID?\n\nThis invoice is already fully paid. Status will be updated to PAID.`)) {
+        return
+      }
+      
+      try {
+        await db.transact([
+          db.tx.invoices[invoice.id].update({
+            status: 'PAID',
+            updatedAt: Date.now(),
+          })
+        ])
+        
+        console.log('Invoice status updated to PAID')
+      } catch (error: any) {
+        console.error('Error updating invoice status:', error)
+        alert(`Failed to mark invoice as paid: ${error.message}`)
+      }
       return
     }
     
+    // If there's a remaining balance, create a payment record
     if (!confirm(`Mark invoice ${invoice.invoiceNumber} as PAID?\n\nThis will create a payment record for ${formatCurrency(balance)}`)) {
       return
     }
