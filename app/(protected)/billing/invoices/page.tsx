@@ -135,10 +135,10 @@ export default function InvoicesPage() {
       }
       
       if (formData.servicePeriodStart) {
-        invoiceData.servicePeriodStart = new Date(formData.servicePeriodStart).getTime()
+        invoiceData.servicePeriodStart = new Date(formData.servicePeriodStart + 'T00:00:00').getTime()
       }
       if (formData.servicePeriodEnd) {
-        invoiceData.servicePeriodEnd = new Date(formData.servicePeriodEnd).getTime()
+        invoiceData.servicePeriodEnd = new Date(formData.servicePeriodEnd + 'T23:59:59').getTime()
       }
       
       const invoiceTx = db.tx.invoices[invoiceId]
@@ -153,8 +153,8 @@ export default function InvoicesPage() {
       
       if (formData.servicePeriodStart && formData.servicePeriodEnd) {
         const revenueScheduleId = id()
-        const servicePeriodStart = new Date(formData.servicePeriodStart)
-        const servicePeriodEnd = new Date(formData.servicePeriodEnd)
+        const servicePeriodStart = new Date(formData.servicePeriodStart + 'T00:00:00')
+        const servicePeriodEnd = new Date(formData.servicePeriodEnd + 'T23:59:59')
         const isPastService = servicePeriodEnd < new Date()
         
         const revenueScheduleTx = db.tx.revenueSchedules[revenueScheduleId]
@@ -414,7 +414,23 @@ export default function InvoicesPage() {
                     id="invoiceDate"
                     type="date"
                     value={formData.invoiceDate}
-                    onChange={(e) => setFormData({ ...formData, invoiceDate: e.target.value })}
+                    onChange={(e) => {
+                      const invoiceDate = new Date(e.target.value + 'T00:00:00')
+                      
+                      // Calculate previous month's first and last day
+                      const prevMonth = new Date(invoiceDate.getFullYear(), invoiceDate.getMonth() - 1, 1)
+                      const lastDayOfPrevMonth = new Date(invoiceDate.getFullYear(), invoiceDate.getMonth(), 0)
+                      
+                      const servicePeriodStart = prevMonth.toISOString().split('T')[0]
+                      const servicePeriodEnd = lastDayOfPrevMonth.toISOString().split('T')[0]
+                      
+                      setFormData({ 
+                        ...formData, 
+                        invoiceDate: e.target.value,
+                        servicePeriodStart,
+                        servicePeriodEnd
+                      })
+                    }}
                     required
                     disabled={isSubmitting}
                   />
