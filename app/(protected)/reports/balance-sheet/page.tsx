@@ -28,8 +28,8 @@ export default function BalanceSheetPage() {
     
     const totalCash = payments.reduce((sum: number, p: any) => sum + p.amount, 0)
     
-    // Only include outstanding invoices (not PAID) in AR calculation
-    const outstandingInvoices = invoices.filter((inv: any) => inv.status !== 'PAID')
+    // Only include outstanding invoices (not PAID or VOID) in AR calculation
+    const outstandingInvoices = invoices.filter((inv: any) => inv.status !== 'PAID' && inv.status !== 'VOID')
     
     const totalAR = outstandingInvoices.reduce((sum: number, inv: any) => {
       const paid = (inv.payments || []).reduce((pSum: number, p: any) => pSum + p.amount, 0)

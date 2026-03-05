@@ -22,7 +22,7 @@ export default function ARAgingPage() {
     const invoices = data.invoices
     const today = new Date()
     
-    const outstandingInvoices = invoices.filter((inv: any) => inv.status !== 'PAID')
+    const outstandingInvoices = invoices.filter((inv: any) => inv.status !== 'PAID' && inv.status !== 'VOID')
     
     const byBucket = [
       { bucket: 'Current (0-30 days)', min: -999999, max: 30, reservePct: 0.01 },
@@ -81,10 +81,10 @@ export default function ARAgingPage() {
           customerId,
           customerName,
           current: 0,
-          days1to30: 0,
           days31to60: 0,
           days61to90: 0,
-          days90plus: 0,
+          days91to120: 0,
+          days120plus: 0,
           totalAR: 0,
         })
       }
@@ -95,12 +95,17 @@ export default function ARAgingPage() {
       const paid = (inv.payments || []).reduce((pSum: number, p: any) => pSum + p.amount, 0)
       const balance = inv.totalAmount - paid
       
-      // Include not-yet-due invoices in "Current" bucket
+      // Debug logging for INV-2026-0002
+      if (inv.invoiceNumber && inv.invoiceNumber.includes('2026-0002')) {
+        console.log(`DEBUG INV-2026-0002: Due ${dueDate.toLocaleDateString()}, Days overdue: ${daysOverdue}, Balance: ${balance}`)
+      }
+      
+      // Bucket by days overdue (matching bucket definitions)
       if (daysOverdue <= 30) customer.current += balance
-      else if (daysOverdue <= 60) customer.days1to30 += balance
-      else if (daysOverdue <= 90) customer.days31to60 += balance
-      else if (daysOverdue <= 120) customer.days61to90 += balance
-      else customer.days90plus += balance
+      else if (daysOverdue >= 31 && daysOverdue <= 60) customer.days31to60 += balance
+      else if (daysOverdue >= 61 && daysOverdue <= 90) customer.days61to90 += balance
+      else if (daysOverdue >= 91 && daysOverdue <= 120) customer.days91to120 += balance
+      else customer.days120plus += balance
       
       customer.totalAR += balance
     })
@@ -307,11 +312,11 @@ export default function ARAgingPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Customer</TableHead>
-                <TableHead className="text-right">Current</TableHead>
-                <TableHead className="text-right">1-30 Days</TableHead>
+                <TableHead className="text-right">Current (0-30)</TableHead>
                 <TableHead className="text-right">31-60 Days</TableHead>
                 <TableHead className="text-right">61-90 Days</TableHead>
-                <TableHead className="text-right">90+ Days</TableHead>
+                <TableHead className="text-right">91-120 Days</TableHead>
+                <TableHead className="text-right">120+ Days</TableHead>
                 <TableHead className="text-right">Total AR</TableHead>
               </TableRow>
             </TableHeader>
@@ -320,10 +325,10 @@ export default function ARAgingPage() {
                 <TableRow key={customer.customerId}>
                   <TableCell className="font-medium">{customer.customerName}</TableCell>
                   <TableCell className="text-right">{formatCurrency(customer.current)}</TableCell>
-                  <TableCell className="text-right">{formatCurrency(customer.days1to30)}</TableCell>
                   <TableCell className="text-right">{formatCurrency(customer.days31to60)}</TableCell>
                   <TableCell className="text-right">{formatCurrency(customer.days61to90)}</TableCell>
-                  <TableCell className="text-right text-red-600">{formatCurrency(customer.days90plus)}</TableCell>
+                  <TableCell className="text-right">{formatCurrency(customer.days91to120)}</TableCell>
+                  <TableCell className="text-right text-red-600">{formatCurrency(customer.days120plus)}</TableCell>
                   <TableCell className="text-right font-medium">{formatCurrency(customer.totalAR)}</TableCell>
                 </TableRow>
               ))}

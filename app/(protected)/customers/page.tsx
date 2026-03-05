@@ -81,7 +81,7 @@ export default function CustomersPage() {
             <TableBody>
               {sortedCustomers.map((customer: any) => {
                 const outstandingAR = (customer.invoices || [])
-                  .filter((inv: any) => inv.status !== 'PAID')
+                  .filter((inv: any) => inv.status !== 'PAID' && inv.status !== 'VOID')
                   .reduce((sum: number, invoice: any) => {
                     const paid = (invoice.payments || []).reduce((pSum: number, p: any) => pSum + p.amount, 0)
                     return sum + (invoice.totalAmount - paid)

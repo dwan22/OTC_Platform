@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { db } from "@/lib/db"
 import { id } from "@instantdb/react"
 import { formatCurrency, formatDate } from "@/lib/utils"
-import { Plus, Save, X, CheckCircle, RotateCcw, Trash2 } from "lucide-react"
+import { Plus, Save, X, CheckCircle, RotateCcw, Ban } from "lucide-react"
 import { useState } from "react"
 import { addDays } from "date-fns"
 
@@ -293,38 +293,33 @@ export default function InvoicesPage() {
     }
   }
   
-  const handleDeleteInvoice = async (invoice: any) => {
-    if (!confirm(`Delete invoice ${invoice.invoiceNumber}?\n\nThis action cannot be undone. All associated payment records will also be deleted.`)) {
+  const handleVoidInvoice = async (invoice: any) => {
+    if (!confirm(`Void invoice ${invoice.invoiceNumber}?\n\nThis will exclude the invoice from all financial reporting.`)) {
       return
     }
     
     try {
-      // Build transactions to delete invoice and all payments
-      const transactions: any[] = [
-        db.tx.invoices[invoice.id].delete()
-      ]
-      
-      // Add delete transactions for each payment
-      if (invoice.payments && invoice.payments.length > 0) {
-        invoice.payments.forEach((payment: any) => {
-          transactions.push(db.tx.payments[payment.id].delete())
+      await db.transact([
+        db.tx.invoices[invoice.id].update({
+          status: 'VOID',
+          updatedAt: Date.now(),
         })
-      }
+      ])
       
-      await db.transact(transactions)
-      
-      console.log('Invoice deleted successfully')
+      console.log('Invoice voided successfully')
     } catch (error: any) {
-      console.error('Error deleting invoice:', error)
-      alert(`Failed to delete invoice: ${error.message}`)
+      console.error('Error voiding invoice:', error)
+      alert(`Failed to void invoice: ${error.message}`)
     }
   }
   
-  const totalInvoiced = invoices.reduce((sum: number, invoice: any) => {
+  const activeInvoices = invoices.filter((inv: any) => inv.status !== 'VOID')
+  
+  const totalInvoiced = activeInvoices.reduce((sum: number, invoice: any) => {
     return sum + invoice.totalAmount
   }, 0)
   
-  const totalPaid = invoices.reduce((sum: number, invoice: any) => {
+  const totalPaid = activeInvoices.reduce((sum: number, invoice: any) => {
     const paid = (invoice.payments || []).reduce((pSum: number, payment: any) => {
       return pSum + payment.amount
     }, 0)
@@ -333,7 +328,7 @@ export default function InvoicesPage() {
   
   const totalOutstanding = totalInvoiced - totalPaid
   
-  const overdueInvoices = invoices.filter((inv: any) => inv.status === 'OVERDUE').length
+  const overdueInvoices = activeInvoices.filter((inv: any) => inv.status === 'OVERDUE').length
   
   return (
     <div className="p-8">
@@ -634,14 +629,17 @@ export default function InvoicesPage() {
                       <Badge variant={
                         invoice.status === 'PAID' ? 'default' :
                         invoice.status === 'OVERDUE' ? 'destructive' :
+                        invoice.status === 'VOID' ? 'outline' :
                         'secondary'
-                      }>
+                      }
+                      className={invoice.status === 'VOID' ? 'text-red-600 border-red-300' : ''}
+                      >
                         {invoice.status}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                        {invoice.status !== 'PAID' && (
+                        {invoice.status !== 'PAID' && invoice.status !== 'VOID' && (
                           <Button
                             size="sm"
                             variant="outline"
@@ -662,15 +660,17 @@ export default function InvoicesPage() {
                             Reopen
                           </Button>
                         )}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDeleteInvoice(invoice)}
-                          className="text-red-600 border-red-300 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4 mr-1" />
-                          Delete
-                        </Button>
+                        {invoice.status !== 'VOID' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleVoidInvoice(invoice)}
+                            className="text-red-600 border-red-300 hover:bg-red-50"
+                          >
+                            <Ban className="h-4 w-4 mr-1" />
+                            Void
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>

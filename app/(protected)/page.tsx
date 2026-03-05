@@ -53,7 +53,7 @@ export default function DashboardPage() {
       })
     }
     
-    const outstandingInvoices = invoices.filter((inv: any) => inv.status !== 'PAID')
+    const outstandingInvoices = invoices.filter((inv: any) => inv.status !== 'PAID' && inv.status !== 'VOID')
     
     const byBucket = [
       { bucket: 'Current', min: 0, max: 30 },
