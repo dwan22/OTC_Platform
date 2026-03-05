@@ -205,29 +205,11 @@ export default function InvoicesPage() {
     }, 0)
     const balance = invoice.totalAmount - totalPaid
     
-    // If balance is 0 (already has payment records), just update status
     if (balance <= 0) {
-      if (!confirm(`Mark invoice ${invoice.invoiceNumber} as PAID?\n\nThis invoice already has payment records. Status will be updated to PAID.`)) {
-        return
-      }
-      
-      try {
-        await db.transact([
-          db.tx.invoices[invoice.id].update({
-            status: 'PAID',
-            updatedAt: Date.now(),
-          })
-        ])
-        
-        console.log('Invoice status updated to PAID')
-      } catch (error: any) {
-        console.error('Error updating invoice status:', error)
-        alert(`Failed to mark invoice as paid: ${error.message}`)
-      }
+      alert('This invoice is already fully paid')
       return
     }
     
-    // If there's a balance, create a payment record
     if (!confirm(`Mark invoice ${invoice.invoiceNumber} as PAID?\n\nThis will create a payment record for ${formatCurrency(balance)}`)) {
       return
     }
@@ -263,17 +245,27 @@ export default function InvoicesPage() {
   }
   
   const handleReopenInvoice = async (invoice: any) => {
-    if (!confirm(`Reopen invoice ${invoice.invoiceNumber}?\n\nThis will change the status back to PENDING.`)) {
+    if (!confirm(`Reopen invoice ${invoice.invoiceNumber}?\n\nThis will change the status back to PENDING and delete all associated payment records.`)) {
       return
     }
     
     try {
-      await db.transact([
+      // Build transactions to delete all payments and update invoice status
+      const transactions: any[] = [
         db.tx.invoices[invoice.id].update({
           status: 'PENDING',
           updatedAt: Date.now(),
         })
-      ])
+      ]
+      
+      // Add delete transactions for each payment
+      if (invoice.payments && invoice.payments.length > 0) {
+        invoice.payments.forEach((payment: any) => {
+          transactions.push(db.tx.payments[payment.id].delete())
+        })
+      }
+      
+      await db.transact(transactions)
       
       console.log('Invoice reopened successfully')
     } catch (error: any) {
