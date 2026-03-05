@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { db } from "@/lib/db"
 import { id } from "@instantdb/react"
 import { formatCurrency, formatDate } from "@/lib/utils"
-import { Plus, Save, X, CheckCircle, RotateCcw } from "lucide-react"
+import { Plus, Save, X, CheckCircle, RotateCcw, Trash2 } from "lucide-react"
 import { useState } from "react"
 import { addDays } from "date-fns"
 
@@ -290,6 +290,33 @@ export default function InvoicesPage() {
     } catch (error: any) {
       console.error('Error reopening invoice:', error)
       alert(`Failed to reopen invoice: ${error.message}`)
+    }
+  }
+  
+  const handleDeleteInvoice = async (invoice: any) => {
+    if (!confirm(`Delete invoice ${invoice.invoiceNumber}?\n\nThis action cannot be undone. All associated payment records will also be deleted.`)) {
+      return
+    }
+    
+    try {
+      // Build transactions to delete invoice and all payments
+      const transactions: any[] = [
+        db.tx.invoices[invoice.id].delete()
+      ]
+      
+      // Add delete transactions for each payment
+      if (invoice.payments && invoice.payments.length > 0) {
+        invoice.payments.forEach((payment: any) => {
+          transactions.push(db.tx.payments[payment.id].delete())
+        })
+      }
+      
+      await db.transact(transactions)
+      
+      console.log('Invoice deleted successfully')
+    } catch (error: any) {
+      console.error('Error deleting invoice:', error)
+      alert(`Failed to delete invoice: ${error.message}`)
     }
   }
   
@@ -619,6 +646,15 @@ export default function InvoicesPage() {
                             Reopen
                           </Button>
                         )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDeleteInvoice(invoice)}
+                          className="text-red-600 border-red-300 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Delete
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
