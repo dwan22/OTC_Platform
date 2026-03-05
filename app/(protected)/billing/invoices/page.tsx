@@ -17,6 +17,7 @@ import { addDays } from "date-fns"
 export default function InvoicesPage() {
   const [isCreating, setIsCreating] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [selectedInvoice, setSelectedInvoice] = useState<any>(null)
   const [formData, setFormData] = useState({
     customerId: '',
     contractId: '',
@@ -545,6 +546,7 @@ export default function InvoicesPage() {
               <TableRow>
                 <TableHead>Invoice #</TableHead>
                 <TableHead>Customer</TableHead>
+                <TableHead>Service Period</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead>Due Date</TableHead>
                 <TableHead>Amount</TableHead>
@@ -562,9 +564,22 @@ export default function InvoicesPage() {
                 const balance = invoice.totalAmount - totalPaid
                 
                 return (
-                  <TableRow key={invoice.id}>
+                  <TableRow 
+                    key={invoice.id}
+                    className="cursor-pointer hover:bg-slate-50"
+                    onClick={() => setSelectedInvoice(invoice)}
+                  >
                     <TableCell className="font-medium">{invoice.invoiceNumber}</TableCell>
                     <TableCell>{invoice.customer?.companyName || 'Unknown'}</TableCell>
+                    <TableCell>
+                      {invoice.servicePeriodStart && invoice.servicePeriodEnd ? (
+                        <span className="text-sm">
+                          {formatDate(invoice.servicePeriodStart)} - {formatDate(invoice.servicePeriodEnd)}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400">-</span>
+                      )}
+                    </TableCell>
                     <TableCell>{formatDate(invoice.invoiceDate)}</TableCell>
                     <TableCell>{formatDate(invoice.dueDate)}</TableCell>
                     <TableCell>{formatCurrency(invoice.totalAmount)}</TableCell>
@@ -582,7 +597,7 @@ export default function InvoicesPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                         {invoice.status !== 'PAID' && (
                           <Button
                             size="sm"
@@ -613,6 +628,152 @@ export default function InvoicesPage() {
           </Table>
         </CardContent>
       </Card>
+      
+      {selectedInvoice && (
+        <div 
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => setSelectedInvoice(null)}
+        >
+          <Card 
+            className="max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <CardHeader>
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle>Invoice Details</CardTitle>
+                  <CardDescription>{selectedInvoice.invoiceNumber}</CardDescription>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedInvoice(null)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm text-slate-500">Customer</Label>
+                  <p className="font-medium">{selectedInvoice.customer?.companyName || 'Unknown'}</p>
+                </div>
+                <div>
+                  <Label className="text-sm text-slate-500">Status</Label>
+                  <div className="mt-1">
+                    <Badge variant={
+                      selectedInvoice.status === 'PAID' ? 'default' :
+                      selectedInvoice.status === 'OVERDUE' ? 'destructive' :
+                      'secondary'
+                    }>
+                      {selectedInvoice.status}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm text-slate-500">Invoice Date</Label>
+                  <p className="font-medium">{formatDate(selectedInvoice.invoiceDate)}</p>
+                </div>
+                <div>
+                  <Label className="text-sm text-slate-500">Due Date</Label>
+                  <p className="font-medium">{formatDate(selectedInvoice.dueDate)}</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm text-slate-500">Service Period Start</Label>
+                  <p className="font-medium">
+                    {selectedInvoice.servicePeriodStart ? formatDate(selectedInvoice.servicePeriodStart) : '-'}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-sm text-slate-500">Service Period End</Label>
+                  <p className="font-medium">
+                    {selectedInvoice.servicePeriodEnd ? formatDate(selectedInvoice.servicePeriodEnd) : '-'}
+                  </p>
+                </div>
+              </div>
+              
+              {selectedInvoice.contract && (
+                <div>
+                  <Label className="text-sm text-slate-500">Contract</Label>
+                  <p className="font-medium">{selectedInvoice.contract.contractNumber}</p>
+                </div>
+              )}
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm text-slate-500">Payment Terms</Label>
+                  <p className="font-medium">{selectedInvoice.paymentTerms?.replace('_', ' ')}</p>
+                </div>
+              </div>
+              
+              <div className="border-t pt-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-slate-600">Subtotal</span>
+                    <span className="font-medium">{formatCurrency(selectedInvoice.amount)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-600">Tax</span>
+                    <span className="font-medium">{formatCurrency(selectedInvoice.taxAmount)}</span>
+                  </div>
+                  <div className="flex justify-between text-lg font-bold border-t pt-2">
+                    <span>Total Amount</span>
+                    <span>{formatCurrency(selectedInvoice.totalAmount)}</span>
+                  </div>
+                </div>
+              </div>
+              
+              {selectedInvoice.payments && selectedInvoice.payments.length > 0 && (
+                <div className="border-t pt-4">
+                  <Label className="text-sm text-slate-500 mb-3 block">Payment History</Label>
+                  <div className="space-y-2">
+                    {selectedInvoice.payments.map((payment: any) => (
+                      <div key={payment.id} className="flex justify-between items-center bg-slate-50 p-3 rounded">
+                        <div>
+                          <p className="font-medium">{formatCurrency(payment.amount)}</p>
+                          <p className="text-sm text-slate-500">
+                            {formatDate(payment.paymentDate)} • {payment.paymentMethod}
+                          </p>
+                          {payment.referenceNumber && (
+                            <p className="text-xs text-slate-400">Ref: {payment.referenceNumber}</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-between font-bold mt-4 pt-4 border-t">
+                    <span>Total Paid</span>
+                    <span className="text-green-600">
+                      {formatCurrency(
+                        selectedInvoice.payments.reduce((sum: number, p: any) => sum + p.amount, 0)
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex justify-between font-bold mt-2">
+                    <span>Balance Due</span>
+                    <span className={
+                      selectedInvoice.totalAmount - selectedInvoice.payments.reduce((sum: number, p: any) => sum + p.amount, 0) > 0
+                        ? 'text-orange-600'
+                        : 'text-slate-600'
+                    }>
+                      {formatCurrency(
+                        selectedInvoice.totalAmount - selectedInvoice.payments.reduce((sum: number, p: any) => sum + p.amount, 0)
+                      )}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }
