@@ -124,8 +124,8 @@ export default function InvoicesPage() {
       
       const invoiceData: any = {
         invoiceNumber: generateInvoiceNumber(),
-        invoiceDate: new Date(formData.invoiceDate).getTime(),
-        dueDate: new Date(dueDate).getTime(),
+        invoiceDate: new Date(formData.invoiceDate + 'T00:00:00').getTime(),
+        dueDate: new Date(dueDate + 'T00:00:00').getTime(),
         amount,
         taxAmount,
         totalAmount,
