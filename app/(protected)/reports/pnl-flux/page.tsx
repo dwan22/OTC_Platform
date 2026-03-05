@@ -8,7 +8,8 @@ import { db } from "@/lib/db"
 import { useMemo, useState } from "react"
 import { startOfMonth, endOfMonth, subMonths, addMonths, format } from "date-fns"
 import { Button } from "@/components/ui/button"
-import { X } from "lucide-react"
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
+import { ChevronDown, X } from "lucide-react"
 
 export default function PnLFluxPage() {
   const [selectedMonths, setSelectedMonths] = useState<string[]>([])
@@ -256,23 +257,30 @@ export default function PnLFluxPage() {
           <CardDescription>Choose specific months to analyze (or leave empty for YTD)</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-2 mb-4">
-            {availableMonths.map(({ key }) => (
-              <Button
-                key={key}
-                variant={selectedMonths.includes(key) ? "default" : "outline"}
-                size="sm"
-                onClick={() => toggleMonth(key)}
-              >
-                {key}
-              </Button>
-            ))}
-          </div>
-          {selectedMonths.length > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                Selected: {selectedMonths.length} month(s)
-              </span>
+          <div className="flex items-center gap-3">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="min-w-[200px] justify-between">
+                  {selectedMonths.length === 0 
+                    ? 'Select months...' 
+                    : `${selectedMonths.length} month(s) selected`}
+                  <ChevronDown className="h-4 w-4 ml-2" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56 max-h-[400px] overflow-y-auto">
+                {availableMonths.map(({ key }) => (
+                  <DropdownMenuCheckboxItem
+                    key={key}
+                    checked={selectedMonths.includes(key)}
+                    onCheckedChange={() => toggleMonth(key)}
+                  >
+                    {key}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
+            {selectedMonths.length > 0 && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -281,8 +289,14 @@ export default function PnLFluxPage() {
                 <X className="h-4 w-4 mr-1" />
                 Clear
               </Button>
-            </div>
-          )}
+            )}
+            
+            {selectedMonths.length > 0 && (
+              <span className="text-sm text-muted-foreground">
+                {selectedMonths.sort().join(', ')}
+              </span>
+            )}
+          </div>
         </CardContent>
       </Card>
       
