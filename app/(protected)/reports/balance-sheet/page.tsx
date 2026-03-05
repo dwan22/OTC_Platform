@@ -31,12 +31,34 @@ export default function BalanceSheetPage() {
     // Only include outstanding invoices (not PAID or VOID) in AR calculation
     const outstandingInvoices = invoices.filter((inv: any) => inv.status !== 'PAID' && inv.status !== 'VOID')
     
-    const totalAR = outstandingInvoices.reduce((sum: number, inv: any) => {
-      const paid = (inv.payments || []).reduce((pSum: number, p: any) => pSum + p.amount, 0)
-      return sum + (inv.totalAmount - paid)
-    }, 0)
+    const today = new Date()
     
-    const totalReserve = reserves.reduce((sum: number, r: any) => sum + r.reserveAmount, 0)
+    // Calculate AR and reserves by aging bucket
+    const agingBuckets = [
+      { min: -999999, max: 30, reservePct: 0.01 },
+      { min: 31, max: 60, reservePct: 0.05 },
+      { min: 61, max: 90, reservePct: 0.15 },
+      { min: 91, max: 120, reservePct: 0.35 },
+      { min: 121, max: 999999, reservePct: 0.75 },
+    ]
+    
+    let totalAR = 0
+    let totalReserve = 0
+    
+    outstandingInvoices.forEach((inv: any) => {
+      const dueDate = new Date(inv.dueDate)
+      const daysOverdue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24))
+      const paid = (inv.payments || []).reduce((pSum: number, p: any) => pSum + p.amount, 0)
+      const balance = inv.totalAmount - paid
+      
+      // Find the appropriate bucket
+      const bucket = agingBuckets.find(b => daysOverdue >= b.min && daysOverdue <= b.max)
+      const reservePct = bucket?.reservePct || 0.01
+      
+      totalAR += balance
+      totalReserve += balance * reservePct
+    })
+    
     const netAR = totalAR - totalReserve
     
     const totalDeferredRevenue = schedules.reduce((sum: number, s: any) => sum + s.deferredAmount, 0)

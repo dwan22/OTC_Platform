@@ -89,11 +89,12 @@ export default function RevenueRecognitionPage() {
         }
         
         // Calculate total months in contract (using month boundaries, not days)
+        // Contract end date is exclusive - if contract ends Oct 1, last service month is Sept
         let totalMonths = 0
         let currentMonth = new Date(contractStart.getFullYear(), contractStart.getMonth(), 1)
         const contractEndMonth = new Date(contractEnd.getFullYear(), contractEnd.getMonth(), 1)
         
-        while (currentMonth <= contractEndMonth) {
+        while (currentMonth < contractEndMonth) {
           totalMonths++
           currentMonth = addMonths(currentMonth, 1)
         }

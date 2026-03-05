@@ -15,6 +15,9 @@ export default function PnLFluxPage() {
     },
     revenueSchedules: {},
     arReserves: {},
+    invoices: {
+      payments: {},
+    },
   })
   
   const data = useMemo(() => {
@@ -23,6 +26,7 @@ export default function PnLFluxPage() {
     const contracts = queryData.contracts
     const schedules = queryData.revenueSchedules || []
     const reserves = queryData.arReserves || []
+    const invoices = queryData.invoices || []
     
     const activeContracts = contracts.filter((c: any) => c.status === 'ACTIVE')
     
@@ -61,7 +65,29 @@ export default function PnLFluxPage() {
       return sum + recognizedAmount
     }, 0)
     
-    const totalBadDebtExpense = reserves.reduce((sum: number, r: any) => sum + r.badDebtExpense, 0)
+    // Calculate YTD bad debt expense from outstanding invoices
+    const outstandingInvoices = invoices.filter((inv: any) => inv.status !== 'PAID' && inv.status !== 'VOID')
+    
+    const agingBuckets = [
+      { min: -999999, max: 30, reservePct: 0.01 },
+      { min: 31, max: 60, reservePct: 0.05 },
+      { min: 61, max: 90, reservePct: 0.15 },
+      { min: 91, max: 120, reservePct: 0.35 },
+      { min: 121, max: 999999, reservePct: 0.75 },
+    ]
+    
+    const totalBadDebtExpense = outstandingInvoices.reduce((sum: number, inv: any) => {
+      const dueDate = new Date(inv.dueDate)
+      const daysOverdue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24))
+      const paid = (inv.payments || []).reduce((pSum: number, p: any) => pSum + p.amount, 0)
+      const balance = inv.totalAmount - paid
+      
+      // Find the appropriate bucket
+      const bucket = agingBuckets.find(b => daysOverdue >= b.min && daysOverdue <= b.max)
+      const reservePct = bucket?.reservePct || 0.01
+      
+      return sum + (balance * reservePct)
+    }, 0)
     
     const grossProfit = totalRecognizedRevenue
     const operatingExpenses = totalBadDebtExpense
