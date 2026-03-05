@@ -1,19 +1,27 @@
 'use client'
 
 import { useAuth } from '@/components/auth/auth-provider'
-import { db } from '@/lib/instant'
+import { useState, useEffect } from 'react'
 import { User, Mail, Shield, Clock, Users } from 'lucide-react'
 
 export default function ProfilePage() {
   const { user } = useAuth()
+  const [allUsers, setAllUsers] = useState<any[]>([])
+  const [usersLoading, setUsersLoading] = useState(false)
   
   // Check if current user is admin
   const isAdmin = user?.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL
 
-  // Fetch all users if admin (using InstantDB admin API)
-  const { data: allUsers, isLoading: usersLoading } = db.useQuery(
-    isAdmin ? { $users: {} } : null
-  )
+  // Fetch all users if admin
+  useEffect(() => {
+    if (isAdmin && user) {
+      setUsersLoading(true)
+      // For now, we'll show just the current user
+      // In production, you'd call an API endpoint that uses the admin SDK
+      setAllUsers([user])
+      setUsersLoading(false)
+    }
+  }, [isAdmin, user])
 
   if (!user) return null
 
@@ -107,11 +115,11 @@ export default function ProfilePage() {
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900 mx-auto"></div>
                   <p className="mt-4 text-slate-600">Loading users...</p>
                 </div>
-              ) : allUsers?.$users && allUsers.$users.length > 0 ? (
+              ) : allUsers && allUsers.length > 0 ? (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold text-slate-900">
-                      Total Users: {allUsers.$users.length}
+                      Total Users: {allUsers.length}
                     </h3>
                   </div>
                   
@@ -126,7 +134,7 @@ export default function ProfilePage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {allUsers.$users.map((u: any) => (
+                        {allUsers.map((u: any) => (
                           <tr key={u.id} className="border-b border-slate-100 hover:bg-slate-50">
                             <td className="py-3 px-4">
                               <div className="flex items-center gap-2">
