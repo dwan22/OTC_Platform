@@ -328,7 +328,14 @@ export default function InvoicesPage() {
   
   const totalOutstanding = totalInvoiced - totalPaid
   
-  const overdueInvoices = activeInvoices.filter((inv: any) => inv.status === 'OVERDUE').length
+  const today = new Date()
+  const overdueInvoices = activeInvoices.filter((inv: any) => {
+    if (inv.status === 'PAID') return false
+    const dueDate = new Date(inv.dueDate)
+    const totalPaid = (inv.payments || []).reduce((sum: number, p: any) => sum + p.amount, 0)
+    const balance = inv.totalAmount - totalPaid
+    return dueDate < today && balance > 0
+  }).length
   
   return (
     <div className="p-8">
