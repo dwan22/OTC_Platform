@@ -64,7 +64,6 @@ export default function RevenueRecognitionPage() {
     const totalRecognized = schedules.reduce((sum: number, s: any) => sum + s.recognizedAmount, 0)
     const totalDeferred = schedules.reduce((sum: number, s: any) => sum + s.deferredAmount, 0)
     
-    const today = new Date()
     const monthlyMap = new Map()
     
     for (let i = -6; i <= 5; i++) {
@@ -93,8 +92,8 @@ export default function RevenueRecognitionPage() {
     
     const schedulesWithDetails = schedules.map((s: any) => ({
       id: s.id,
-      customerName: s.contract?.customer?.companyName || 'Unknown',
-      contractNumber: s.contract?.contractNumber || 'N/A',
+      customerName: s.customerName,
+      contractNumber: s.contractNumber,
       periodStart: s.periodStart,
       periodEnd: s.periodEnd,
       scheduledAmount: s.scheduledAmount,
