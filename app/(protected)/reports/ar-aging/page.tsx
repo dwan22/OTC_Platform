@@ -25,7 +25,7 @@ export default function ARAgingPage() {
     const outstandingInvoices = invoices.filter((inv: any) => inv.status !== 'PAID')
     
     const byBucket = [
-      { bucket: 'Current (0-30 days)', min: 0, max: 30, reservePct: 0.01 },
+      { bucket: 'Current (0-30 days)', min: -999999, max: 30, reservePct: 0.01 },
       { bucket: '31-60 days', min: 31, max: 60, reservePct: 0.05 },
       { bucket: '61-90 days', min: 61, max: 90, reservePct: 0.15 },
       { bucket: '91-120 days', min: 91, max: 120, reservePct: 0.35 },
@@ -89,6 +89,7 @@ export default function ARAgingPage() {
       const paid = (inv.payments || []).reduce((pSum: number, p: any) => pSum + p.amount, 0)
       const balance = inv.totalAmount - paid
       
+      // Include not-yet-due invoices in "Current" bucket
       if (daysOverdue <= 30) customer.current += balance
       else if (daysOverdue <= 60) customer.days1to30 += balance
       else if (daysOverdue <= 90) customer.days31to60 += balance
