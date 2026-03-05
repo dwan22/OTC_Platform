@@ -152,8 +152,8 @@ export default function DashboardPage() {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <Card className="card-hover border-0 shadow-lg overflow-hidden">
-          <div className="absolute inset-0 gradient-primary opacity-10"></div>
+        <Card className="card-hover border-0 shadow-lg overflow-hidden relative">
+          <div className="absolute inset-0 gradient-primary opacity-10 pointer-events-none"></div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
             <CardTitle className="text-sm font-semibold text-slate-700">Annual Recurring Revenue</CardTitle>
             <div className="p-2 rounded-lg bg-purple-100">
@@ -168,8 +168,8 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
         
-        <Card className="card-hover border-0 shadow-lg overflow-hidden">
-          <div className="absolute inset-0 gradient-success opacity-10"></div>
+        <Card className="card-hover border-0 shadow-lg overflow-hidden relative">
+          <div className="absolute inset-0 gradient-success opacity-10 pointer-events-none"></div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
             <CardTitle className="text-sm font-semibold text-slate-700">MRR Growth</CardTitle>
             <div className={`p-2 rounded-lg ${mrrGrowth >= 0 ? 'bg-green-100' : 'bg-red-100'}`}>
@@ -188,8 +188,8 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
         
-        <Card className="card-hover border-0 shadow-lg overflow-hidden">
-          <div className="absolute inset-0 gradient-info opacity-10"></div>
+        <Card className="card-hover border-0 shadow-lg overflow-hidden relative">
+          <div className="absolute inset-0 gradient-info opacity-10 pointer-events-none"></div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
             <CardTitle className="text-sm font-semibold text-slate-700">Active Customers</CardTitle>
             <div className="p-2 rounded-lg bg-blue-100">
@@ -204,8 +204,8 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
         
-        <Card className="card-hover border-0 shadow-lg overflow-hidden">
-          <div className="absolute inset-0 gradient-warning opacity-10"></div>
+        <Card className="card-hover border-0 shadow-lg overflow-hidden relative">
+          <div className="absolute inset-0 gradient-warning opacity-10 pointer-events-none"></div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
             <CardTitle className="text-sm font-semibold text-slate-700">Total AR</CardTitle>
             <div className="p-2 rounded-lg bg-orange-100">

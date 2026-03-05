@@ -301,8 +301,8 @@ export default function PnLFluxPage() {
       </Card>
       
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <Card className="card-hover border-0 shadow-lg overflow-hidden">
-          <div className="absolute inset-0 gradient-primary opacity-10"></div>
+        <Card className="card-hover border-0 shadow-lg overflow-hidden relative">
+          <div className="absolute inset-0 gradient-primary opacity-10 pointer-events-none"></div>
           <CardHeader className="pb-3 relative">
             <CardTitle className="text-sm font-semibold text-slate-700">Current ARR</CardTitle>
           </CardHeader>
@@ -314,8 +314,8 @@ export default function PnLFluxPage() {
           </CardContent>
         </Card>
         
-        <Card className="card-hover border-0 shadow-lg overflow-hidden">
-          <div className="absolute inset-0 gradient-info opacity-10"></div>
+        <Card className="card-hover border-0 shadow-lg overflow-hidden relative">
+          <div className="absolute inset-0 gradient-info opacity-10 pointer-events-none"></div>
           <CardHeader className="pb-3 relative">
             <CardTitle className="text-sm font-semibold text-slate-700">Current MRR</CardTitle>
           </CardHeader>
@@ -327,8 +327,8 @@ export default function PnLFluxPage() {
           </CardContent>
         </Card>
         
-        <Card className="card-hover border-0 shadow-lg overflow-hidden">
-          <div className="absolute inset-0 gradient-success opacity-10"></div>
+        <Card className="card-hover border-0 shadow-lg overflow-hidden relative">
+          <div className="absolute inset-0 gradient-success opacity-10 pointer-events-none"></div>
           <CardHeader className="pb-3 relative">
             <CardTitle className="text-sm font-semibold text-slate-700">Revenue</CardTitle>
           </CardHeader>
@@ -338,8 +338,8 @@ export default function PnLFluxPage() {
           </CardContent>
         </Card>
         
-        <Card className="card-hover border-0 shadow-lg overflow-hidden">
-          <div className="absolute inset-0 gradient-warning opacity-10"></div>
+        <Card className="card-hover border-0 shadow-lg overflow-hidden relative">
+          <div className="absolute inset-0 gradient-warning opacity-10 pointer-events-none"></div>
           <CardHeader className="pb-3 relative">
             <CardTitle className="text-sm font-semibold text-slate-700">Net Income</CardTitle>
           </CardHeader>

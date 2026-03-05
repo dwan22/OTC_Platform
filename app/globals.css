@@ -80,7 +80,7 @@
   }
   
   .card-hover {
-    @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
+    @apply transition-all duration-200 hover:shadow-lg;
   }
   
   .glass-effect {

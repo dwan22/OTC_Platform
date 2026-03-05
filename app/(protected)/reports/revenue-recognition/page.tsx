@@ -185,8 +185,8 @@ export default function RevenueRecognitionPage() {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <Card className="card-hover border-0 shadow-lg overflow-hidden">
-          <div className="absolute inset-0 gradient-primary opacity-10"></div>
+        <Card className="card-hover border-0 shadow-lg overflow-hidden relative">
+          <div className="absolute inset-0 gradient-primary opacity-10 pointer-events-none"></div>
           <CardHeader className="pb-3 relative">
             <div className="flex items-center gap-2">
               <CardTitle className="text-sm font-semibold text-slate-700">Total Scheduled</CardTitle>
@@ -203,8 +203,8 @@ export default function RevenueRecognitionPage() {
           </CardContent>
         </Card>
         
-        <Card className="card-hover border-0 shadow-lg overflow-hidden">
-          <div className="absolute inset-0 gradient-success opacity-10"></div>
+        <Card className="card-hover border-0 shadow-lg overflow-hidden relative">
+          <div className="absolute inset-0 gradient-success opacity-10 pointer-events-none"></div>
           <CardHeader className="pb-3 relative">
             <div className="flex items-center gap-2">
               <CardTitle className="text-sm font-semibold text-slate-700">Revenue Recognized</CardTitle>
@@ -221,8 +221,8 @@ export default function RevenueRecognitionPage() {
           </CardContent>
         </Card>
         
-        <Card className="card-hover border-0 shadow-lg overflow-hidden">
-          <div className="absolute inset-0 gradient-info opacity-10"></div>
+        <Card className="card-hover border-0 shadow-lg overflow-hidden relative">
+          <div className="absolute inset-0 gradient-info opacity-10 pointer-events-none"></div>
           <CardHeader className="pb-3 relative">
             <div className="flex items-center gap-2">
               <CardTitle className="text-sm font-semibold text-slate-700">Deferred Revenue</CardTitle>
@@ -239,8 +239,8 @@ export default function RevenueRecognitionPage() {
           </CardContent>
         </Card>
         
-        <Card className="card-hover border-0 shadow-lg overflow-hidden">
-          <div className="absolute inset-0 gradient-warning opacity-10"></div>
+        <Card className="card-hover border-0 shadow-lg overflow-hidden relative">
+          <div className="absolute inset-0 gradient-warning opacity-10 pointer-events-none"></div>
           <CardHeader className="pb-3 relative">
             <div className="flex items-center gap-2">
               <CardTitle className="text-sm font-semibold text-slate-700">Recognition Rate</CardTitle>
