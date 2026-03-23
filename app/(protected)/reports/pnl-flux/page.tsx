@@ -15,8 +15,8 @@ import { ChevronDown, X } from "lucide-react"
 export default function PnLFluxPage() {
   const [selectedMonths, setSelectedMonths] = useState<string[]>([])
   const [filters, setFilters] = useState({
-    subscriptionTier: '',
-    customer: '',
+    subscriptionTier: 'all',
+    customer: 'all',
   })
   
   const { isLoading, error, data: queryData } = db.useQuery({
@@ -50,13 +50,13 @@ export default function PnLFluxPage() {
     const reserves = queryData.arReserves || []
     let invoices = queryData.invoices || []
     
-    if (filters.subscriptionTier) {
+    if (filters.subscriptionTier && filters.subscriptionTier !== 'all') {
       contracts = contracts.filter((c: any) => c.subscriptionTier?.id === filters.subscriptionTier)
       schedules = schedules.filter((s: any) => s.contract?.subscriptionTier?.id === filters.subscriptionTier)
       invoices = invoices.filter((inv: any) => inv.contract?.subscriptionTier?.id === filters.subscriptionTier)
     }
     
-    if (filters.customer) {
+    if (filters.customer && filters.customer !== 'all') {
       contracts = contracts.filter((c: any) => c.customer?.id === filters.customer)
       schedules = schedules.filter((s: any) => s.contract?.customer?.id === filters.customer)
       invoices = invoices.filter((inv: any) => inv.customer?.id === filters.customer)
@@ -300,7 +300,7 @@ export default function PnLFluxPage() {
                   <SelectValue placeholder="All Tiers" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Tiers</SelectItem>
+                  <SelectItem value="all">All Tiers</SelectItem>
                   {subscriptionTiers.map((tier: any) => (
                     <SelectItem key={tier.id} value={tier.id}>
                       {tier.tierName}
@@ -320,7 +320,7 @@ export default function PnLFluxPage() {
                   <SelectValue placeholder="All Customers" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Customers</SelectItem>
+                  <SelectItem value="all">All Customers</SelectItem>
                   {customers.map((customer: any) => (
                     <SelectItem key={customer.id} value={customer.id}>
                       {customer.companyName}
@@ -331,12 +331,12 @@ export default function PnLFluxPage() {
             </div>
           </div>
           
-          {(filters.subscriptionTier || filters.customer) && (
+          {(filters.subscriptionTier !== 'all' || filters.customer !== 'all') && (
             <div className="mt-4">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setFilters({ subscriptionTier: '', customer: '' })}
+                onClick={() => setFilters({ subscriptionTier: 'all', customer: 'all' })}
               >
                 Clear Filters
               </Button>

@@ -27,7 +27,7 @@ export default function InvoicesPage() {
   const [filters, setFilters] = useState({
     invoiceNumber: '',
     customer: '',
-    status: '',
+    status: 'all',
     minAmount: '',
     maxAmount: '',
   })
@@ -115,7 +115,7 @@ export default function InvoicesPage() {
       )
     }
     
-    if (filters.status) {
+    if (filters.status && filters.status !== 'all') {
       result = result.filter((inv: any) => inv.status === filters.status)
     }
     
@@ -760,7 +760,7 @@ export default function InvoicesPage() {
                     <SelectValue placeholder="All" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All</SelectItem>
+                    <SelectItem value="all">All</SelectItem>
                     <SelectItem value="PENDING">OUTSTANDING</SelectItem>
                     <SelectItem value="PAID">PAID</SelectItem>
                     <SelectItem value="OVERDUE">OVERDUE</SelectItem>
@@ -794,7 +794,7 @@ export default function InvoicesPage() {
               </div>
             </div>
             
-            {(filters.invoiceNumber || filters.customer || filters.status || filters.minAmount || filters.maxAmount) && (
+            {(filters.invoiceNumber || filters.customer || filters.status !== 'all' || filters.minAmount || filters.maxAmount) && (
               <div className="mt-3">
                 <Button
                   variant="outline"
@@ -802,7 +802,7 @@ export default function InvoicesPage() {
                   onClick={() => setFilters({
                     invoiceNumber: '',
                     customer: '',
-                    status: '',
+                    status: 'all',
                     minAmount: '',
                     maxAmount: '',
                   })}
