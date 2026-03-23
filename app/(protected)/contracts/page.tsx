@@ -8,9 +8,12 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { db } from "@/lib/db"
 import { formatCurrency, formatDate } from "@/lib/utils"
 import Link from "next/link"
-import { Plus, MoreVertical, Ban, Trash2 } from "lucide-react"
+import { Plus, MoreVertical, Ban, Trash2, Edit } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 export default function ContractsPage() {
+  const router = useRouter()
+  
   const handleVoidContract = async (contract: any) => {
     if (!confirm(`Void contract ${contract.contractNumber}?\n\nThis will exclude the contract from all financial reporting and revenue recognition.`)) {
       return
@@ -152,15 +155,20 @@ export default function ContractsPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => router.push(`/contracts/${contract.id}`)}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
                           {contract.status !== 'VOID' && (
                             <>
+                              <DropdownMenuSeparator />
                               <DropdownMenuItem onClick={() => handleVoidContract(contract)}>
                                 <Ban className="h-4 w-4 mr-2" />
                                 Void
                               </DropdownMenuItem>
-                              <DropdownMenuSeparator />
                             </>
                           )}
+                          <DropdownMenuSeparator />
                           <DropdownMenuItem 
                             onClick={() => handleDeleteContract(contract)}
                             className="text-red-600 focus:text-red-600"

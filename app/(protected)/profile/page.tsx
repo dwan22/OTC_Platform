@@ -55,10 +55,6 @@ export default function ProfilePage() {
   return (
     <div className="p-8">
       <div className="max-w-6xl mx-auto">
-        <div className="mb-4 p-4 bg-green-100 border-2 border-green-500 rounded-lg">
-          <p className="text-green-900 font-bold">✅ PAGE UPDATED - If you see this, the page has loaded the latest code!</p>
-          <p className="text-sm text-green-800 mt-1">Admin Status: {isAdmin ? 'YES (should see all users below)' : 'NO'} | Users loaded: {allUsers.length}</p>
-        </div>
         <h1 className="text-3xl font-bold text-slate-900 mb-8">User Profile</h1>
 
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden mb-8">

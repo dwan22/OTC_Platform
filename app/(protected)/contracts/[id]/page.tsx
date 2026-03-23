@@ -3,15 +3,21 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { db } from "@/lib/db"
 import { formatCurrency, formatDate } from "@/lib/utils"
 import Link from "next/link"
-import { ArrowLeft } from "lucide-react"
-import { use } from "react"
+import { ArrowLeft, Edit, Save, X } from "lucide-react"
+import { use, useState } from "react"
 
 export default function ContractDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
+  const [isEditing, setIsEditing] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [editFormData, setEditFormData] = useState<any>(null)
   
   const { isLoading, error, data } = db.useQuery({
     contracts: {
@@ -23,6 +29,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
       invoices: {},
       revenueSchedules: {},
     },
+    subscriptionTiers: {},
   })
   
   if (isLoading) {
@@ -45,6 +52,65 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
   }
   
   const contract = data.contracts[0]
+  const subscriptionTiers = data?.subscriptionTiers || []
+  
+  const handleEdit = () => {
+    setEditFormData({
+      subscriptionTierId: contract.subscriptionTier?.id || '',
+      startDate: new Date(contract.startDate).toISOString().split('T')[0],
+      endDate: new Date(contract.endDate).toISOString().split('T')[0],
+      quantity: contract.quantity.toString(),
+      customPricing: contract.customPricing?.toString() || '',
+      status: contract.status,
+    })
+    setIsEditing(true)
+  }
+  
+  const handleSave = async () => {
+    if (!editFormData.subscriptionTierId || !editFormData.quantity) {
+      alert('Please fill in all required fields')
+      return
+    }
+    
+    setIsSaving(true)
+    
+    try {
+      const selectedTier = subscriptionTiers.find((t: any) => t.id === editFormData.subscriptionTierId)
+      const quantity = parseInt(editFormData.quantity)
+      const customPricing = editFormData.customPricing ? parseFloat(editFormData.customPricing) : null
+      const pricePerUnit = customPricing || selectedTier?.basePrice || 0
+      const totalContractValue = pricePerUnit * quantity
+      
+      const updateData: any = {
+        startDate: new Date(editFormData.startDate + 'T00:00:00').getTime(),
+        endDate: new Date(editFormData.endDate + 'T23:59:59').getTime(),
+        quantity,
+        totalContractValue,
+        status: editFormData.status,
+        updatedAt: Date.now(),
+      }
+      
+      if (customPricing) {
+        updateData.customPricing = customPricing
+      }
+      
+      const tx = db.tx.contracts[contract.id].update(updateData)
+      
+      if (editFormData.subscriptionTierId !== contract.subscriptionTier?.id) {
+        tx.link({ subscriptionTier: editFormData.subscriptionTierId })
+      }
+      
+      await db.transact([tx])
+      
+      setIsEditing(false)
+      setEditFormData(null)
+      setIsSaving(false)
+    } catch (error: any) {
+      console.error('Error updating contract:', error)
+      alert(`Failed to update contract: ${error.message}`)
+      setIsSaving(false)
+    }
+  }
   
   const totalInvoiced = (contract.invoices || []).reduce((sum: number, invoice: any) => {
     return sum + invoice.totalAmount
@@ -72,9 +138,17 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
             <h1 className="text-3xl font-bold text-slate-900">{contract.contractNumber}</h1>
             <p className="text-slate-600 mt-1">{contract.customer?.companyName}</p>
           </div>
-          <Badge variant={contract.status === 'ACTIVE' ? 'default' : 'secondary'}>
-            {contract.status}
-          </Badge>
+          <div className="flex gap-2 items-center">
+            <Badge variant={contract.status === 'ACTIVE' ? 'default' : 'secondary'}>
+              {contract.status}
+            </Badge>
+            {!isEditing && (
+              <Button onClick={handleEdit} size="sm">
+                <Edit className="h-4 w-4 mr-2" />
+                Edit Contract
+              </Button>
+            )}
+          </div>
         </div>
       </div>
       
@@ -117,6 +191,123 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
           </CardContent>
         </Card>
       </div>
+      
+      {isEditing && editFormData && (
+        <Card className="mb-6 border-2 border-blue-300">
+          <CardHeader className="bg-blue-50">
+            <CardTitle>Edit Contract</CardTitle>
+            <CardDescription>Update contract details</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="tier">Subscription Tier *</Label>
+                <Select
+                  value={editFormData.subscriptionTierId}
+                  onValueChange={(value) => setEditFormData({ ...editFormData, subscriptionTierId: value })}
+                  disabled={isSaving}
+                >
+                  <SelectTrigger id="tier">
+                    <SelectValue placeholder="Select a tier" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {subscriptionTiers.map((tier: any) => (
+                      <SelectItem key={tier.id} value={tier.id}>
+                        {tier.tierName} - {formatCurrency(tier.basePrice)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="quantity">Quantity *</Label>
+                <Input
+                  id="quantity"
+                  type="number"
+                  value={editFormData.quantity}
+                  onChange={(e) => setEditFormData({ ...editFormData, quantity: e.target.value })}
+                  required
+                  disabled={isSaving}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="startDate">Start Date *</Label>
+                <Input
+                  id="startDate"
+                  type="date"
+                  value={editFormData.startDate}
+                  onChange={(e) => setEditFormData({ ...editFormData, startDate: e.target.value })}
+                  required
+                  disabled={isSaving}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="endDate">End Date *</Label>
+                <Input
+                  id="endDate"
+                  type="date"
+                  value={editFormData.endDate}
+                  onChange={(e) => setEditFormData({ ...editFormData, endDate: e.target.value })}
+                  required
+                  disabled={isSaving}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="customPricing">Custom Pricing (Optional)</Label>
+                <Input
+                  id="customPricing"
+                  type="number"
+                  step="0.01"
+                  placeholder="Leave blank to use tier base price"
+                  value={editFormData.customPricing}
+                  onChange={(e) => setEditFormData({ ...editFormData, customPricing: e.target.value })}
+                  disabled={isSaving}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="status">Status *</Label>
+                <Select
+                  value={editFormData.status}
+                  onValueChange={(value) => setEditFormData({ ...editFormData, status: value })}
+                  disabled={isSaving}
+                >
+                  <SelectTrigger id="status">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ACTIVE">ACTIVE</SelectItem>
+                    <SelectItem value="EXPIRED">EXPIRED</SelectItem>
+                    <SelectItem value="VOID">VOID</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="flex gap-2 mt-6">
+              <Button onClick={handleSave} disabled={isSaving}>
+                <Save className="h-4 w-4 mr-2" />
+                {isSaving ? 'Saving...' : 'Save Changes'}
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setIsEditing(false)
+                  setEditFormData(null)
+                }}
+                disabled={isSaving}
+              >
+                <X className="h-4 w-4 mr-2" />
+                Cancel
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <Card>

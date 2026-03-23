@@ -219,11 +219,6 @@ export default function RevenueRecognitionPage() {
   
   return (
     <div className="p-8">
-      <div className="mb-4 p-4 bg-green-100 border-2 border-green-500 rounded-lg">
-        <p className="text-green-900 font-bold">✅ PAGE UPDATED - If you see this, the forecast assumptions panel should be visible below!</p>
-        <p className="text-sm text-green-800 mt-1">Scroll down to see the blue "📊 Forecast Assumptions" section with 4 input fields</p>
-      </div>
-      
       <div className="mb-8">
         <h1 className="text-4xl font-bold tracking-tight text-slate-900">Revenue Recognition</h1>
         <p className="text-slate-500 mt-2 text-base font-light">ASC 606 compliant revenue recognition tracking with forecasting</p>

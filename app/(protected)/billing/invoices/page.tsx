@@ -11,14 +11,26 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { db } from "@/lib/db"
 import { id } from "@instantdb/react"
 import { formatCurrency, formatDate } from "@/lib/utils"
-import { Plus, Save, X, CheckCircle, RotateCcw, Ban, Trash2, MoreVertical } from "lucide-react"
-import { useState } from "react"
+import { Plus, Save, X, CheckCircle, RotateCcw, Ban, Trash2, MoreVertical, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
+import { useState, useMemo } from "react"
 import { addDays } from "date-fns"
+
+type SortField = 'invoiceNumber' | 'customer' | 'invoiceDate' | 'dueDate' | 'totalAmount' | 'status'
+type SortDirection = 'asc' | 'desc' | null
 
 export default function InvoicesPage() {
   const [isCreating, setIsCreating] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null)
+  const [sortField, setSortField] = useState<SortField | null>(null)
+  const [sortDirection, setSortDirection] = useState<SortDirection>(null)
+  const [filters, setFilters] = useState({
+    invoiceNumber: '',
+    customer: '',
+    status: '',
+    minAmount: '',
+    maxAmount: '',
+  })
   const [formData, setFormData] = useState({
     customerId: '',
     contractId: '',
@@ -66,9 +78,100 @@ export default function InvoicesPage() {
   const customers = data?.customers || []
   const contracts = data?.contracts || []
   
-  const sortedInvoices = [...invoices].sort((a: any, b: any) => {
-    return new Date(b.invoiceDate).getTime() - new Date(a.invoiceDate).getTime()
-  })
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      if (sortDirection === 'asc') {
+        setSortDirection('desc')
+      } else if (sortDirection === 'desc') {
+        setSortField(null)
+        setSortDirection(null)
+      } else {
+        setSortDirection('asc')
+      }
+    } else {
+      setSortField(field)
+      setSortDirection('asc')
+    }
+  }
+  
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) return <ArrowUpDown className="h-4 w-4 ml-1 text-slate-400" />
+    if (sortDirection === 'asc') return <ArrowUp className="h-4 w-4 ml-1 text-slate-900" />
+    return <ArrowDown className="h-4 w-4 ml-1 text-slate-900" />
+  }
+  
+  const filteredAndSortedInvoices = useMemo(() => {
+    let result = [...invoices]
+    
+    if (filters.invoiceNumber) {
+      result = result.filter((inv: any) => 
+        inv.invoiceNumber.toLowerCase().includes(filters.invoiceNumber.toLowerCase())
+      )
+    }
+    
+    if (filters.customer) {
+      result = result.filter((inv: any) => 
+        inv.customer?.companyName?.toLowerCase().includes(filters.customer.toLowerCase())
+      )
+    }
+    
+    if (filters.status) {
+      result = result.filter((inv: any) => inv.status === filters.status)
+    }
+    
+    if (filters.minAmount) {
+      result = result.filter((inv: any) => inv.totalAmount >= parseFloat(filters.minAmount))
+    }
+    
+    if (filters.maxAmount) {
+      result = result.filter((inv: any) => inv.totalAmount <= parseFloat(filters.maxAmount))
+    }
+    
+    if (sortField && sortDirection) {
+      result.sort((a: any, b: any) => {
+        let aVal: any, bVal: any
+        
+        switch (sortField) {
+          case 'invoiceNumber':
+            aVal = a.invoiceNumber
+            bVal = b.invoiceNumber
+            break
+          case 'customer':
+            aVal = a.customer?.companyName || ''
+            bVal = b.customer?.companyName || ''
+            break
+          case 'invoiceDate':
+            aVal = new Date(a.invoiceDate).getTime()
+            bVal = new Date(b.invoiceDate).getTime()
+            break
+          case 'dueDate':
+            aVal = new Date(a.dueDate).getTime()
+            bVal = new Date(b.dueDate).getTime()
+            break
+          case 'totalAmount':
+            aVal = a.totalAmount
+            bVal = b.totalAmount
+            break
+          case 'status':
+            aVal = a.status
+            bVal = b.status
+            break
+          default:
+            return 0
+        }
+        
+        if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1
+        if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1
+        return 0
+      })
+    } else {
+      result.sort((a: any, b: any) => {
+        return new Date(b.invoiceDate).getTime() - new Date(a.invoiceDate).getTime()
+      })
+    }
+    
+    return result
+  }, [invoices, filters, sortField, sortDirection])
   
   const filteredContracts = formData.customerId 
     ? contracts.filter((c: any) => c.customer?.id === formData.customerId)
@@ -622,23 +725,159 @@ export default function InvoicesPage() {
           <CardDescription>Complete invoice history</CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="mb-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
+            <h3 className="text-sm font-semibold text-slate-900 mb-4">Filters</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              <div>
+                <Label htmlFor="filterInvoiceNumber" className="text-xs">Invoice #</Label>
+                <Input
+                  id="filterInvoiceNumber"
+                  placeholder="Search..."
+                  value={filters.invoiceNumber}
+                  onChange={(e) => setFilters({ ...filters, invoiceNumber: e.target.value })}
+                  className="h-9 text-sm"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="filterCustomer" className="text-xs">Customer</Label>
+                <Input
+                  id="filterCustomer"
+                  placeholder="Search..."
+                  value={filters.customer}
+                  onChange={(e) => setFilters({ ...filters, customer: e.target.value })}
+                  className="h-9 text-sm"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="filterStatus" className="text-xs">Status</Label>
+                <Select
+                  value={filters.status}
+                  onValueChange={(value) => setFilters({ ...filters, status: value })}
+                >
+                  <SelectTrigger id="filterStatus" className="h-9 text-sm">
+                    <SelectValue placeholder="All" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">All</SelectItem>
+                    <SelectItem value="PENDING">OUTSTANDING</SelectItem>
+                    <SelectItem value="PAID">PAID</SelectItem>
+                    <SelectItem value="OVERDUE">OVERDUE</SelectItem>
+                    <SelectItem value="VOID">VOID</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label htmlFor="filterMinAmount" className="text-xs">Min Amount</Label>
+                <Input
+                  id="filterMinAmount"
+                  type="number"
+                  placeholder="0"
+                  value={filters.minAmount}
+                  onChange={(e) => setFilters({ ...filters, minAmount: e.target.value })}
+                  className="h-9 text-sm"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="filterMaxAmount" className="text-xs">Max Amount</Label>
+                <Input
+                  id="filterMaxAmount"
+                  type="number"
+                  placeholder="∞"
+                  value={filters.maxAmount}
+                  onChange={(e) => setFilters({ ...filters, maxAmount: e.target.value })}
+                  className="h-9 text-sm"
+                />
+              </div>
+            </div>
+            
+            {(filters.invoiceNumber || filters.customer || filters.status || filters.minAmount || filters.maxAmount) && (
+              <div className="mt-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setFilters({
+                    invoiceNumber: '',
+                    customer: '',
+                    status: '',
+                    minAmount: '',
+                    maxAmount: '',
+                  })}
+                >
+                  Clear Filters
+                </Button>
+              </div>
+            )}
+          </div>
+          
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Invoice #</TableHead>
-                <TableHead>Customer</TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-slate-100 select-none"
+                  onClick={() => handleSort('invoiceNumber')}
+                >
+                  <div className="flex items-center">
+                    Invoice #
+                    <SortIcon field="invoiceNumber" />
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-slate-100 select-none"
+                  onClick={() => handleSort('customer')}
+                >
+                  <div className="flex items-center">
+                    Customer
+                    <SortIcon field="customer" />
+                  </div>
+                </TableHead>
                 <TableHead>Service Period</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Due Date</TableHead>
-                <TableHead>Amount</TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-slate-100 select-none"
+                  onClick={() => handleSort('invoiceDate')}
+                >
+                  <div className="flex items-center">
+                    Date
+                    <SortIcon field="invoiceDate" />
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-slate-100 select-none"
+                  onClick={() => handleSort('dueDate')}
+                >
+                  <div className="flex items-center">
+                    Due Date
+                    <SortIcon field="dueDate" />
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-slate-100 select-none"
+                  onClick={() => handleSort('totalAmount')}
+                >
+                  <div className="flex items-center">
+                    Amount
+                    <SortIcon field="totalAmount" />
+                  </div>
+                </TableHead>
                 <TableHead>Paid</TableHead>
                 <TableHead>Balance</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-slate-100 select-none"
+                  onClick={() => handleSort('status')}
+                >
+                  <div className="flex items-center">
+                    Status
+                    <SortIcon field="status" />
+                  </div>
+                </TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortedInvoices.map((invoice: any) => {
+              {filteredAndSortedInvoices.map((invoice: any) => {
                 const totalPaid = (invoice.payments || []).reduce((sum: number, payment: any) => {
                   return sum + payment.amount
                 }, 0)
