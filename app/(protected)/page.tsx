@@ -147,170 +147,170 @@ export default function DashboardPage() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Executive Dashboard</h1>
-        <p className="text-slate-600 mt-2 text-lg">Order-to-Cash Performance Overview</p>
+        <h1 className="text-4xl font-bold tracking-tight text-slate-900">Executive Dashboard</h1>
+        <p className="text-slate-500 mt-2 text-base font-light">Order-to-Cash Performance Overview</p>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <Card className="card-hover border-0 shadow-lg overflow-hidden relative">
-          <div className="absolute inset-0 gradient-primary opacity-10 pointer-events-none"></div>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
-            <CardTitle className="text-sm font-semibold text-slate-700">Annual Recurring Revenue</CardTitle>
-            <div className="p-2 rounded-lg bg-purple-100">
-              <DollarSign className="h-5 w-5 text-purple-600" />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+        <Card className="card-hover border border-slate-200 shadow-sm overflow-hidden relative bg-white">
+          <div className="absolute inset-0 gradient-primary opacity-[0.02] pointer-events-none"></div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative border-b border-slate-100">
+            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-slate-500">Annual Recurring Revenue</CardTitle>
+            <div className="p-1.5 rounded bg-slate-100">
+              <DollarSign className="h-4 w-4 text-slate-700" />
             </div>
           </CardHeader>
-          <CardContent className="relative">
-            <div className="text-3xl font-bold text-slate-900">{formatCurrency(arr)}</div>
-            <p className="text-sm text-slate-600 mt-2 font-medium">
+          <CardContent className="relative pt-4">
+            <div className="text-3xl font-semibold tracking-tight text-slate-900">{formatCurrency(arr)}</div>
+            <p className="text-xs text-slate-500 mt-2 font-light">
               MRR: {formatCurrency(currentMRR)}
             </p>
           </CardContent>
         </Card>
         
-        <Card className="card-hover border-0 shadow-lg overflow-hidden relative">
-          <div className="absolute inset-0 gradient-success opacity-10 pointer-events-none"></div>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
-            <CardTitle className="text-sm font-semibold text-slate-700">MRR Growth</CardTitle>
-            <div className={`p-2 rounded-lg ${mrrGrowth >= 0 ? 'bg-green-100' : 'bg-red-100'}`}>
+        <Card className="card-hover border border-slate-200 shadow-sm overflow-hidden relative bg-white">
+          <div className="absolute inset-0 gradient-success opacity-[0.02] pointer-events-none"></div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative border-b border-slate-100">
+            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-slate-500">MRR Growth</CardTitle>
+            <div className={`p-1.5 rounded ${mrrGrowth >= 0 ? 'bg-emerald-50' : 'bg-red-50'}`}>
               {mrrGrowth >= 0 ? (
-                <TrendingUp className="h-5 w-5 text-green-600" />
+                <TrendingUp className="h-4 w-4 text-emerald-700" />
               ) : (
-                <TrendingDown className="h-5 w-5 text-red-600" />
+                <TrendingDown className="h-4 w-4 text-red-700" />
               )}
             </div>
           </CardHeader>
-          <CardContent className="relative">
-            <div className={`text-3xl font-bold ${mrrGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+          <CardContent className="relative pt-4">
+            <div className={`text-3xl font-semibold tracking-tight ${mrrGrowth >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
               {mrrGrowth >= 0 ? '+' : ''}{mrrGrowth.toFixed(1)}%
             </div>
-            <p className="text-sm text-slate-600 mt-2 font-medium">vs previous month</p>
+            <p className="text-xs text-slate-500 mt-2 font-light">vs previous month</p>
           </CardContent>
         </Card>
         
-        <Card className="card-hover border-0 shadow-lg overflow-hidden relative">
-          <div className="absolute inset-0 gradient-info opacity-10 pointer-events-none"></div>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
-            <CardTitle className="text-sm font-semibold text-slate-700">Active Customers</CardTitle>
-            <div className="p-2 rounded-lg bg-blue-100">
-              <Users className="h-5 w-5 text-blue-600" />
+        <Card className="card-hover border border-slate-200 shadow-sm overflow-hidden relative bg-white">
+          <div className="absolute inset-0 gradient-info opacity-[0.02] pointer-events-none"></div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative border-b border-slate-100">
+            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-slate-500">Active Customers</CardTitle>
+            <div className="p-1.5 rounded bg-slate-100">
+              <Users className="h-4 w-4 text-slate-700" />
             </div>
           </CardHeader>
-          <CardContent className="relative">
-            <div className="text-3xl font-bold text-slate-900">{customerCount}</div>
-            <p className="text-sm text-slate-600 mt-2 font-medium">
+          <CardContent className="relative pt-4">
+            <div className="text-3xl font-semibold tracking-tight text-slate-900">{customerCount}</div>
+            <p className="text-xs text-slate-500 mt-2 font-light">
               {activeContracts} active contracts
             </p>
           </CardContent>
         </Card>
         
-        <Card className="card-hover border-0 shadow-lg overflow-hidden relative">
-          <div className="absolute inset-0 gradient-warning opacity-10 pointer-events-none"></div>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
-            <CardTitle className="text-sm font-semibold text-slate-700">Total AR</CardTitle>
-            <div className="p-2 rounded-lg bg-orange-100">
-              <FileText className="h-5 w-5 text-orange-600" />
+        <Card className="card-hover border border-slate-200 shadow-sm overflow-hidden relative bg-white">
+          <div className="absolute inset-0 gradient-warning opacity-[0.02] pointer-events-none"></div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative border-b border-slate-100">
+            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total AR</CardTitle>
+            <div className="p-1.5 rounded bg-slate-100">
+              <FileText className="h-4 w-4 text-slate-700" />
             </div>
           </CardHeader>
-          <CardContent className="relative">
-            <div className="text-3xl font-bold text-slate-900">{formatCurrency(totalAR)}</div>
-            <p className="text-sm text-red-600 mt-2 font-semibold">
+          <CardContent className="relative pt-4">
+            <div className="text-3xl font-semibold tracking-tight text-slate-900">{formatCurrency(totalAR)}</div>
+            <p className="text-xs text-red-700 mt-2 font-medium">
               Reserve: {formatCurrency(totalReserve)}
             </p>
           </CardContent>
         </Card>
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <Card className="border-0 shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-xl font-bold text-slate-900">MRR Trend (Last 6 Months)</CardTitle>
-            <CardDescription className="text-slate-600">Monthly Recurring Revenue growth</CardDescription>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-8">
+        <Card className="border border-slate-200 shadow-sm bg-white">
+          <CardHeader className="border-b border-slate-100">
+            <CardTitle className="text-lg font-semibold tracking-tight text-slate-900">MRR Trend (Last 6 Months)</CardTitle>
+            <CardDescription className="text-slate-500 font-light">Monthly Recurring Revenue growth</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis dataKey="month" style={{ fontSize: '12px', fill: '#64748b' }} />
+                <YAxis style={{ fontSize: '12px', fill: '#64748b' }} />
+                <Tooltip formatter={(value) => formatCurrency(Number(value))} contentStyle={{ borderRadius: '6px', border: '1px solid #e2e8f0' }} />
                 <Legend />
-                <Line type="monotone" dataKey="MRR" stroke="#3b82f6" strokeWidth={2} />
+                <Line type="monotone" dataKey="MRR" stroke="#1e293b" strokeWidth={2.5} dot={{ fill: '#1e293b', r: 4 }} />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
         
-        <Card className="border-0 shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-xl font-bold text-slate-900">AR Aging Analysis</CardTitle>
-            <CardDescription className="text-slate-600">Outstanding receivables by aging bucket</CardDescription>
+        <Card className="border border-slate-200 shadow-sm bg-white">
+          <CardHeader className="border-b border-slate-100">
+            <CardTitle className="text-lg font-semibold tracking-tight text-slate-900">AR Aging Analysis</CardTitle>
+            <CardDescription className="text-slate-500 font-light">Outstanding receivables by aging bucket</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={agingChartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis dataKey="name" style={{ fontSize: '12px', fill: '#64748b' }} />
+                <YAxis style={{ fontSize: '12px', fill: '#64748b' }} />
+                <Tooltip formatter={(value) => formatCurrency(Number(value))} contentStyle={{ borderRadius: '6px', border: '1px solid #e2e8f0' }} />
                 <Legend />
-                <Bar dataKey="AR Balance" fill="#3b82f6" />
-                <Bar dataKey="Reserve" fill="#ef4444" />
+                <Bar dataKey="AR Balance" fill="#1e293b" radius={[2, 2, 0, 0]} />
+                <Bar dataKey="Reserve" fill="#dc2626" radius={[2, 2, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="border-0 shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-xl font-bold text-slate-900">Key Metrics</CardTitle>
-            <CardDescription className="text-slate-600">Financial health indicators</CardDescription>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <Card className="border border-slate-200 shadow-sm bg-white">
+          <CardHeader className="border-b border-slate-100">
+            <CardTitle className="text-lg font-semibold tracking-tight text-slate-900">Key Metrics</CardTitle>
+            <CardDescription className="text-slate-500 font-light">Financial health indicators</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center p-3 rounded-lg bg-gradient-to-r from-purple-50 to-pink-50">
-                <span className="text-sm font-semibold text-slate-700">Deferred Revenue</span>
-                <span className="text-base font-bold text-slate-900">{formatCurrency(deferredRevenue)}</span>
+          <CardContent className="pt-6">
+            <div className="space-y-3">
+              <div className="flex justify-between items-center p-3 rounded bg-slate-50 border border-slate-100">
+                <span className="text-sm font-medium text-slate-600">Deferred Revenue</span>
+                <span className="text-base font-semibold text-slate-900">{formatCurrency(deferredRevenue)}</span>
               </div>
-              <div className="flex justify-between items-center p-3 rounded-lg bg-gradient-to-r from-blue-50 to-cyan-50">
-                <span className="text-sm font-semibold text-slate-700">AR Reserve Coverage</span>
-                <span className="text-base font-bold text-slate-900">
+              <div className="flex justify-between items-center p-3 rounded bg-slate-50 border border-slate-100">
+                <span className="text-sm font-medium text-slate-600">AR Reserve Coverage</span>
+                <span className="text-base font-semibold text-slate-900">
                   {((totalReserve / totalAR) * 100).toFixed(1)}%
                 </span>
               </div>
-              <div className="flex justify-between items-center p-3 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50">
-                <span className="text-sm font-semibold text-slate-700">Days Sales Outstanding</span>
-                <span className="text-base font-bold text-slate-900">32 days</span>
+              <div className="flex justify-between items-center p-3 rounded bg-slate-50 border border-slate-100">
+                <span className="text-sm font-medium text-slate-600">Days Sales Outstanding</span>
+                <span className="text-base font-semibold text-slate-900">32 days</span>
               </div>
-              <div className="flex justify-between items-center p-3 rounded-lg bg-gradient-to-r from-orange-50 to-amber-50">
-                <span className="text-sm font-semibold text-slate-700">Collection Rate</span>
-                <span className="text-base font-bold text-green-600">94.2%</span>
+              <div className="flex justify-between items-center p-3 rounded bg-slate-50 border border-slate-100">
+                <span className="text-sm font-medium text-slate-600">Collection Rate</span>
+                <span className="text-base font-semibold text-emerald-700">94.2%</span>
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="border-0 shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-xl font-bold text-slate-900">Recent Invoices</CardTitle>
-            <CardDescription className="text-slate-600">Latest billing activity</CardDescription>
+        <Card className="border border-slate-200 shadow-sm bg-white">
+          <CardHeader className="border-b border-slate-100">
+            <CardTitle className="text-lg font-semibold tracking-tight text-slate-900">Recent Invoices</CardTitle>
+            <CardDescription className="text-slate-500 font-light">Latest billing activity</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
+          <CardContent className="pt-6">
+            <div className="space-y-2">
               {recentInvoices.map((invoice: any) => (
-                <div key={invoice.id} className="flex justify-between items-center p-3 rounded-lg hover:bg-slate-50 transition-colors border border-slate-100">
+                <div key={invoice.id} className="flex justify-between items-center p-3 rounded hover:bg-slate-50 transition-colors border border-slate-200">
                   <div>
-                    <div className="text-sm font-semibold text-slate-900">{invoice.customerName}</div>
-                    <div className="text-xs text-slate-500 font-medium">{invoice.invoiceNumber}</div>
+                    <div className="text-sm font-medium text-slate-900">{invoice.customerName}</div>
+                    <div className="text-xs text-slate-500 font-light">{invoice.invoiceNumber}</div>
                   </div>
                   <div className="text-right">
-                    <div className="text-sm font-bold text-slate-900">{formatCurrency(invoice.totalAmount)}</div>
+                    <div className="text-sm font-semibold text-slate-900">{formatCurrency(invoice.totalAmount)}</div>
                     <div className={`text-xs font-semibold ${
-                      invoice.status === 'PAID' ? 'text-green-600' :
-                      invoice.status === 'OVERDUE' ? 'text-red-600' :
-                      'text-orange-600'
+                      invoice.status === 'PAID' ? 'text-emerald-700' :
+                      invoice.status === 'OVERDUE' ? 'text-red-700' :
+                      'text-amber-700'
                     }`}>
                       {invoice.status}
                     </div>

@@ -8,18 +8,45 @@ export default function ProfilePage() {
   const { user } = useAuth()
   const [allUsers, setAllUsers] = useState<any[]>([])
   const [usersLoading, setUsersLoading] = useState(false)
+  const [fetchError, setFetchError] = useState<string | null>(null)
   
   // Check if current user is admin
   const isAdmin = user?.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL
+  
+  console.log('Profile Page Debug:', {
+    userEmail: user?.email,
+    adminEmail: process.env.NEXT_PUBLIC_ADMIN_EMAIL,
+    isAdmin,
+    allUsersCount: allUsers.length
+  })
 
   // Fetch all users if admin
   useEffect(() => {
     if (isAdmin && user) {
+      console.log('Fetching users...')
       setUsersLoading(true)
-      // For now, we'll show just the current user
-      // In production, you'd call an API endpoint that uses the admin SDK
-      setAllUsers([user])
-      setUsersLoading(false)
+      setFetchError(null)
+      fetch('/api/users')
+        .then(res => {
+          console.log('API Response status:', res.status)
+          return res.json()
+        })
+        .then(data => {
+          console.log('API Response data:', data)
+          if (data.users) {
+            setAllUsers(data.users)
+            console.log('Set users:', data.users)
+          } else if (data.error) {
+            setFetchError(data.error)
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching users:', error)
+          setFetchError(error.message)
+        })
+        .finally(() => {
+          setUsersLoading(false)
+        })
     }
   }, [isAdmin, user])
 
@@ -28,6 +55,10 @@ export default function ProfilePage() {
   return (
     <div className="p-8">
       <div className="max-w-6xl mx-auto">
+        <div className="mb-4 p-4 bg-green-100 border-2 border-green-500 rounded-lg">
+          <p className="text-green-900 font-bold">✅ PAGE UPDATED - If you see this, the page has loaded the latest code!</p>
+          <p className="text-sm text-green-800 mt-1">Admin Status: {isAdmin ? 'YES (should see all users below)' : 'NO'} | Users loaded: {allUsers.length}</p>
+        </div>
         <h1 className="text-3xl font-bold text-slate-900 mb-8">User Profile</h1>
 
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden mb-8">
@@ -110,6 +141,12 @@ export default function ProfilePage() {
             </div>
 
             <div className="p-8">
+              {fetchError && (
+                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded text-red-800">
+                  Error: {fetchError}
+                </div>
+              )}
+              
               {usersLoading ? (
                 <div className="text-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900 mx-auto"></div>

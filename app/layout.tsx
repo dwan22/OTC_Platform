@@ -1,9 +1,13 @@
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import { Inter_Tight } from "next/font/google"
 import "./globals.css"
 import { AuthProvider } from "@/components/auth/auth-provider"
 
-const inter = Inter({ subsets: ["latin"] })
+const interTight = Inter_Tight({ 
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-inter-tight"
+})
 
 export const metadata: Metadata = {
   title: "OTC Platform - Order to Cash Management",
@@ -17,7 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={interTight.className}>
         <AuthProvider>
           {children}
         </AuthProvider>
