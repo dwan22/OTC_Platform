@@ -12,6 +12,7 @@ import { formatCurrency, formatDate } from "@/lib/utils"
 import Link from "next/link"
 import { ArrowLeft, Edit, Save, X } from "lucide-react"
 import { use, useState } from "react"
+import { addMonths } from "date-fns"
 
 export default function ContractDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
@@ -238,10 +239,19 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
                   id="startDate"
                   type="date"
                   value={editFormData.startDate}
-                  onChange={(e) => setEditFormData({ ...editFormData, startDate: e.target.value })}
+                  onChange={(e) => {
+                    const newStartDate = new Date(e.target.value + 'T00:00:00')
+                    const newEndDate = addMonths(newStartDate, 12)
+                    setEditFormData({ 
+                      ...editFormData, 
+                      startDate: e.target.value,
+                      endDate: newEndDate.toISOString().split('T')[0]
+                    })
+                  }}
                   required
                   disabled={isSaving}
                 />
+                <p className="text-xs text-slate-500">End date will auto-update to 12 months later</p>
               </div>
               
               <div className="space-y-2">
@@ -254,6 +264,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
                   required
                   disabled={isSaving}
                 />
+                <p className="text-xs text-slate-500">Can be manually adjusted if needed</p>
               </div>
               
               <div className="space-y-2">

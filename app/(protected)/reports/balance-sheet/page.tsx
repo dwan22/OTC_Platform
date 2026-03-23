@@ -2,29 +2,57 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { formatCurrency } from "@/lib/utils"
 import { db } from "@/lib/db"
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 
 export default function BalanceSheetPage() {
+  const [filters, setFilters] = useState({
+    subscriptionTier: '',
+    customer: '',
+  })
+  
   const { isLoading, error, data: queryData } = db.useQuery({
     invoices: {
+      customer: {},
+      contract: {
+        subscriptionTier: {},
+      },
       payments: {},
     },
     payments: {},
-    revenueSchedules: {},
+    revenueSchedules: {
+      contract: {
+        subscriptionTier: {},
+        customer: {},
+      },
+    },
     arReserves: {},
     journalEntries: {},
+    customers: {},
+    subscriptionTiers: {},
   })
   
   const data = useMemo(() => {
     if (!queryData) return null
     
-    const invoices = queryData.invoices || []
+    let invoices = queryData.invoices || []
     const payments = queryData.payments || []
-    const schedules = queryData.revenueSchedules || []
+    let schedules = queryData.revenueSchedules || []
     const reserves = queryData.arReserves || []
     const entries = queryData.journalEntries || []
+    
+    if (filters.subscriptionTier) {
+      invoices = invoices.filter((inv: any) => inv.contract?.subscriptionTier?.id === filters.subscriptionTier)
+      schedules = schedules.filter((s: any) => s.contract?.subscriptionTier?.id === filters.subscriptionTier)
+    }
+    
+    if (filters.customer) {
+      invoices = invoices.filter((inv: any) => inv.customer?.id === filters.customer)
+      schedules = schedules.filter((s: any) => s.contract?.customer?.id === filters.customer)
+    }
     
     const totalCash = payments.reduce((sum: number, p: any) => sum + p.amount, 0)
     
@@ -102,7 +130,7 @@ export default function BalanceSheetPage() {
       trialBalance,
       deferredRevenue,
     }
-  }, [queryData])
+  }, [queryData, filters])
   
   if (isLoading) {
     return (
@@ -133,12 +161,77 @@ export default function BalanceSheetPage() {
   
   const { totalCash, totalAR, netAR, totalReserve, totalDeferredRevenue, totalAssets, totalLiabilities, totalEquity, trialBalance, deferredRevenue } = data
   
+  const customers = queryData?.customers || []
+  const subscriptionTiers = queryData?.subscriptionTiers || []
+  
   return (
     <div className="p-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-slate-900">Balance Sheet Reconciliation</h1>
         <p className="text-slate-600 mt-1">Financial position and subledger reconciliation</p>
       </div>
+      
+      <Card className="mb-8 border border-slate-200 shadow-sm bg-white">
+        <CardHeader className="border-b border-slate-100">
+          <CardTitle className="text-base font-semibold text-slate-900">Filters</CardTitle>
+          <CardDescription className="text-slate-500 font-light">Filter data by subscription tier or customer</CardDescription>
+        </CardHeader>
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-slate-700">Subscription Tier</label>
+              <Select
+                value={filters.subscriptionTier}
+                onValueChange={(value) => setFilters({ ...filters, subscriptionTier: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Tiers" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Tiers</SelectItem>
+                  {subscriptionTiers.map((tier: any) => (
+                    <SelectItem key={tier.id} value={tier.id}>
+                      {tier.tierName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-slate-700">Customer</label>
+              <Select
+                value={filters.customer}
+                onValueChange={(value) => setFilters({ ...filters, customer: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Customers" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Customers</SelectItem>
+                  {customers.map((customer: any) => (
+                    <SelectItem key={customer.id} value={customer.id}>
+                      {customer.companyName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          {(filters.subscriptionTier || filters.customer) && (
+            <div className="mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setFilters({ subscriptionTier: '', customer: '' })}
+              >
+                Clear Filters
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Card>

@@ -2,25 +2,45 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { formatCurrency, formatPercent } from "@/lib/utils"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
 import { db } from "@/lib/db"
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 
 export default function ARAgingPage() {
+  const [filters, setFilters] = useState({
+    subscriptionTier: '',
+    customer: '',
+  })
+  
   const { isLoading, error, data } = db.useQuery({
     invoices: {
       customer: {},
+      contract: {
+        subscriptionTier: {},
+      },
       payments: {},
     },
     arReserves: {},
+    customers: {},
+    subscriptionTiers: {},
   })
   
   const agingData = useMemo(() => {
     if (!data?.invoices) return null
     
-    const invoices = data.invoices
+    let invoices = data.invoices
     const today = new Date()
+    
+    if (filters.subscriptionTier) {
+      invoices = invoices.filter((inv: any) => inv.contract?.subscriptionTier?.id === filters.subscriptionTier)
+    }
+    
+    if (filters.customer) {
+      invoices = invoices.filter((inv: any) => inv.customer?.id === filters.customer)
+    }
     
     const outstandingInvoices = invoices.filter((inv: any) => inv.status !== 'PAID' && inv.status !== 'VOID')
     
@@ -118,7 +138,7 @@ export default function ARAgingPage() {
       pieData,
       byCustomer,
     }
-  }, [data])
+  }, [data, filters])
   
   if (isLoading) {
     return (
@@ -150,6 +170,9 @@ export default function ARAgingPage() {
   const chartData = agingData.chartData || []
   const pieData = agingData.pieData || []
   
+  const customers = data?.customers || []
+  const subscriptionTiers = data?.subscriptionTiers || []
+  
   const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#991b1b']
   
   return (
@@ -158,6 +181,68 @@ export default function ARAgingPage() {
         <h1 className="text-3xl font-bold text-slate-900">AR Aging Analysis</h1>
         <p className="text-slate-600 mt-1">Accounts receivable aging with reserve calculations</p>
       </div>
+      
+      <Card className="mb-8 border border-slate-200 shadow-sm bg-white">
+        <CardHeader className="border-b border-slate-100">
+          <CardTitle className="text-base font-semibold text-slate-900">Filters</CardTitle>
+          <CardDescription className="text-slate-500 font-light">Filter data by subscription tier or customer</CardDescription>
+        </CardHeader>
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-slate-700">Subscription Tier</label>
+              <Select
+                value={filters.subscriptionTier}
+                onValueChange={(value) => setFilters({ ...filters, subscriptionTier: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Tiers" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Tiers</SelectItem>
+                  {subscriptionTiers.map((tier: any) => (
+                    <SelectItem key={tier.id} value={tier.id}>
+                      {tier.tierName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-slate-700">Customer</label>
+              <Select
+                value={filters.customer}
+                onValueChange={(value) => setFilters({ ...filters, customer: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Customers" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Customers</SelectItem>
+                  {customers.map((customer: any) => (
+                    <SelectItem key={customer.id} value={customer.id}>
+                      {customer.companyName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          {(filters.subscriptionTier || filters.customer) && (
+            <div className="mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setFilters({ subscriptionTier: '', customer: '' })}
+              >
+                Clear Filters
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
       
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <Card>

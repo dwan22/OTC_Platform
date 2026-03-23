@@ -19,6 +19,11 @@ export default function RevenueRecognitionPage() {
     newContractsPerMonth: 2,
   })
   
+  const [filters, setFilters] = useState({
+    subscriptionTier: '',
+    customer: '',
+  })
+  
   const { isLoading, error, data: queryData } = db.useQuery({
     contracts: {
       customer: {},
@@ -29,13 +34,24 @@ export default function RevenueRecognitionPage() {
         customer: {},
       },
     },
+    customers: {},
+    subscriptionTiers: {},
   })
   
   const data = useMemo(() => {
     if (!queryData?.contracts) return null
     
     const allContracts = queryData.contracts
-    const contracts = allContracts.filter((c: any) => c.status !== 'VOID')
+    let contracts = allContracts.filter((c: any) => c.status !== 'VOID')
+    
+    if (filters.subscriptionTier) {
+      contracts = contracts.filter((c: any) => c.subscriptionTier?.id === filters.subscriptionTier)
+    }
+    
+    if (filters.customer) {
+      contracts = contracts.filter((c: any) => c.customer?.id === filters.customer)
+    }
+    
     const today = new Date()
     
     const { monthlyGrowthRate, churnRate, newContractValue, newContractsPerMonth } = forecastAssumptions
@@ -115,20 +131,26 @@ export default function RevenueRecognitionPage() {
       const isCurrent = monthStart <= today && monthEnd >= today
       const isFuture = monthStart > today
       
-      if (isFuture) {
-        const monthsInFuture = i
+      if (isFuture || isPast || isCurrent) {
+        const monthsFromToday = i
         let projectedMRR = currentMRR
         
-        for (let m = 1; m <= monthsInFuture; m++) {
+        for (let m = 1; m <= Math.abs(monthsFromToday); m++) {
           const growthFactor = 1 + (monthlyGrowthRate / 100)
           const churnFactor = 1 - (churnRate / 100)
           const newRevenue = newContractsPerMonth * (newContractValue / 12)
           
-          projectedMRR = (projectedMRR * growthFactor * churnFactor) + newRevenue
+          if (monthsFromToday > 0) {
+            projectedMRR = (projectedMRR * growthFactor * churnFactor) + newRevenue
+          } else {
+            projectedMRR = (projectedMRR / (growthFactor * churnFactor)) - newRevenue
+          }
         }
         
         forecastRevenue = projectedMRR
-      } else {
+      }
+      
+      if (!isFuture) {
         contracts.forEach((contract: any) => {
           const contractStart = new Date(contract.startDate)
           const contractEnd = new Date(contract.endDate)
@@ -186,7 +208,7 @@ export default function RevenueRecognitionPage() {
       monthlyData,
       schedules: schedulesWithDetails,
     }
-  }, [queryData, forecastAssumptions])
+  }, [queryData, forecastAssumptions, filters])
   
   if (isLoading) {
     return (
@@ -217,12 +239,77 @@ export default function RevenueRecognitionPage() {
   
   const { totalScheduled, totalRecognized, totalDeferred, monthlyData, schedules } = data
   
+  const customers = queryData?.customers || []
+  const subscriptionTiers = queryData?.subscriptionTiers || []
+  
   return (
     <div className="p-8">
       <div className="mb-8">
         <h1 className="text-4xl font-bold tracking-tight text-slate-900">Revenue Recognition</h1>
         <p className="text-slate-500 mt-2 text-base font-light">ASC 606 compliant revenue recognition tracking with forecasting</p>
       </div>
+      
+      <Card className="mb-8 border border-slate-200 shadow-sm bg-white">
+        <CardHeader className="border-b border-slate-100">
+          <CardTitle className="text-base font-semibold text-slate-900">Filters</CardTitle>
+          <CardDescription className="text-slate-500 font-light">Filter data by subscription tier or customer</CardDescription>
+        </CardHeader>
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-slate-700">Subscription Tier</label>
+              <Select
+                value={filters.subscriptionTier}
+                onValueChange={(value) => setFilters({ ...filters, subscriptionTier: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Tiers" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Tiers</SelectItem>
+                  {subscriptionTiers.map((tier: any) => (
+                    <SelectItem key={tier.id} value={tier.id}>
+                      {tier.tierName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-slate-700">Customer</label>
+              <Select
+                value={filters.customer}
+                onValueChange={(value) => setFilters({ ...filters, customer: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Customers" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Customers</SelectItem>
+                  {customers.map((customer: any) => (
+                    <SelectItem key={customer.id} value={customer.id}>
+                      {customer.companyName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          {(filters.subscriptionTier || filters.customer) && (
+            <div className="mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setFilters({ subscriptionTier: '', customer: '' })}
+              >
+                Clear Filters
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
       
       <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-8">
         <Card className="card-hover border border-slate-200 shadow-sm overflow-hidden relative bg-white">
@@ -432,56 +519,6 @@ export default function RevenueRecognitionPage() {
               </defs>
             </ComposedChart>
           </ResponsiveContainer>
-        </CardContent>
-      </Card>
-      
-      <Card className="mb-8 border border-slate-200 shadow-sm bg-white">
-        <CardHeader className="border-b border-slate-100">
-          <CardTitle className="text-lg font-semibold tracking-tight text-slate-900">Monthly Revenue Waterfall</CardTitle>
-          <CardDescription className="text-slate-500 font-light">Revenue earned and forecasted by month</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Month</TableHead>
-                <TableHead className="text-right">Revenue</TableHead>
-                <TableHead>Type</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {monthlyData.map((month: any) => (
-                <TableRow key={month.month} className={month.isCurrent ? 'bg-slate-50' : ''}>
-                  <TableCell className="font-medium text-slate-700">{month.month}</TableCell>
-                  <TableCell className="text-right font-semibold text-slate-900">
-                    {formatCurrency(month.revenue)}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={
-                      month.isPast ? 'default' :
-                      month.isCurrent ? 'secondary' :
-                      'outline'
-                    }
-                    className={
-                      month.isPast ? 'bg-emerald-700 hover:bg-emerald-800' :
-                      month.isCurrent ? 'bg-slate-700 text-white hover:bg-slate-800' :
-                      'text-slate-600 border-slate-300'
-                    }
-                    >
-                      {month.type}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-              <TableRow className="font-semibold bg-slate-50 border-t-2 border-slate-200">
-                <TableCell className="text-slate-900">Total</TableCell>
-                <TableCell className="text-right text-slate-900">
-                  {formatCurrency(monthlyData.reduce((sum: number, m: any) => sum + m.revenue, 0))}
-                </TableCell>
-                <TableCell>-</TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
         </CardContent>
       </Card>
       

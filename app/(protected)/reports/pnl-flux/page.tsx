@@ -8,30 +8,59 @@ import { db } from "@/lib/db"
 import { useMemo, useState } from "react"
 import { startOfMonth, endOfMonth, subMonths, addMonths, format } from "date-fns"
 import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
 import { ChevronDown, X } from "lucide-react"
 
 export default function PnLFluxPage() {
   const [selectedMonths, setSelectedMonths] = useState<string[]>([])
+  const [filters, setFilters] = useState({
+    subscriptionTier: '',
+    customer: '',
+  })
   
   const { isLoading, error, data: queryData } = db.useQuery({
     contracts: {
+      customer: {},
       subscriptionTier: {},
     },
-    revenueSchedules: {},
+    revenueSchedules: {
+      contract: {
+        customer: {},
+        subscriptionTier: {},
+      },
+    },
     arReserves: {},
     invoices: {
+      customer: {},
+      contract: {
+        subscriptionTier: {},
+      },
       payments: {},
     },
+    customers: {},
+    subscriptionTiers: {},
   })
   
   const data = useMemo(() => {
     if (!queryData?.contracts) return null
     
-    const contracts = queryData.contracts
-    const schedules = queryData.revenueSchedules || []
+    let contracts = queryData.contracts
+    let schedules = queryData.revenueSchedules || []
     const reserves = queryData.arReserves || []
-    const invoices = queryData.invoices || []
+    let invoices = queryData.invoices || []
+    
+    if (filters.subscriptionTier) {
+      contracts = contracts.filter((c: any) => c.subscriptionTier?.id === filters.subscriptionTier)
+      schedules = schedules.filter((s: any) => s.contract?.subscriptionTier?.id === filters.subscriptionTier)
+      invoices = invoices.filter((inv: any) => inv.contract?.subscriptionTier?.id === filters.subscriptionTier)
+    }
+    
+    if (filters.customer) {
+      contracts = contracts.filter((c: any) => c.customer?.id === filters.customer)
+      schedules = schedules.filter((s: any) => s.contract?.customer?.id === filters.customer)
+      invoices = invoices.filter((inv: any) => inv.customer?.id === filters.customer)
+    }
     
     const activeContracts = contracts.filter((c: any) => c.status === 'ACTIVE')
     
@@ -201,7 +230,7 @@ export default function PnLFluxPage() {
       availableMonths,
       periodLabel,
     }
-  }, [queryData, selectedMonths])
+  }, [queryData, selectedMonths, filters])
   
   if (isLoading) {
     return (
@@ -232,6 +261,9 @@ export default function PnLFluxPage() {
   
   const { currentARR, arrGrowth, currentMRR, mrrGrowth, totalRecognizedRevenue, netIncome, chartData, varianceData, budgetRevenue, revenueVariance, revenueVariancePct, totalBadDebtExpense, grossProfit, operatingExpenses, availableMonths, periodLabel } = data
   
+  const customers = queryData?.customers || []
+  const subscriptionTiers = queryData?.subscriptionTiers || []
+  
   const toggleMonth = (monthKey: string) => {
     setSelectedMonths(prev => 
       prev.includes(monthKey) 
@@ -250,6 +282,68 @@ export default function PnLFluxPage() {
         <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">P&L Flux Analysis</h1>
         <p className="text-slate-600 mt-2 text-lg">Budget vs actual variance analysis and performance tracking</p>
       </div>
+      
+      <Card className="mb-8 border border-slate-200 shadow-sm bg-white">
+        <CardHeader className="border-b border-slate-100">
+          <CardTitle className="text-base font-semibold text-slate-900">Filters</CardTitle>
+          <CardDescription className="text-slate-500 font-light">Filter data by subscription tier or customer</CardDescription>
+        </CardHeader>
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-slate-700">Subscription Tier</label>
+              <Select
+                value={filters.subscriptionTier}
+                onValueChange={(value) => setFilters({ ...filters, subscriptionTier: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Tiers" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Tiers</SelectItem>
+                  {subscriptionTiers.map((tier: any) => (
+                    <SelectItem key={tier.id} value={tier.id}>
+                      {tier.tierName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-slate-700">Customer</label>
+              <Select
+                value={filters.customer}
+                onValueChange={(value) => setFilters({ ...filters, customer: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Customers" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Customers</SelectItem>
+                  {customers.map((customer: any) => (
+                    <SelectItem key={customer.id} value={customer.id}>
+                      {customer.companyName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          {(filters.subscriptionTier || filters.customer) && (
+            <div className="mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setFilters({ subscriptionTier: '', customer: '' })}
+              >
+                Clear Filters
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
       
       <Card className="mb-8 border-0 shadow-lg">
         <CardHeader>
