@@ -111,7 +111,6 @@ export default function ContractsPage() {
                 <TableHead>Tier</TableHead>
                 <TableHead>Start Date</TableHead>
                 <TableHead>End Date</TableHead>
-                <TableHead>Quantity</TableHead>
                 <TableHead>Total Value</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Actions</TableHead>
@@ -124,13 +123,9 @@ export default function ContractsPage() {
                   <TableCell>{contract.customer?.companyName || 'Unknown'}</TableCell>
                   <TableCell>
                     <div>{contract.subscriptionTier?.tierName || 'N/A'}</div>
-                    {contract.customPricing && (
-                      <div className="text-xs text-muted-foreground">Custom pricing</div>
-                    )}
                   </TableCell>
                   <TableCell>{formatDate(contract.startDate)}</TableCell>
                   <TableCell>{formatDate(contract.endDate)}</TableCell>
-                  <TableCell>{contract.quantity}</TableCell>
                   <TableCell>{formatCurrency(contract.totalContractValue)}</TableCell>
                   <TableCell>
                     <Badge variant={

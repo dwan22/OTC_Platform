@@ -66,21 +66,14 @@ export default function NewContractPage() {
     try {
       const formData = new FormData(e.currentTarget)
       
-      const quantity = parseInt(formData.get('quantity') as string) || 1
       const startDateStr = formData.get('startDate') as string
       const startDate = new Date(startDateStr + 'T00:00:00')
-      const contractLength = parseInt(formData.get('contractLength') as string) || 12
-      const endDate = addMonths(startDate, contractLength)
-      
-      const customPricing = formData.get('customPricing') as string
-      const hasCustomPricing = customPricing && parseFloat(customPricing) > 0
+      const endDate = addMonths(startDate, 12)
       
       const basePrice = selectedTier?.basePrice || 0
-      const pricePerUnit = hasCustomPricing ? parseFloat(customPricing) : basePrice
       
-      const totalContractValue = selectedTier?.billingFrequency === 'ANNUAL'
-        ? pricePerUnit * quantity
-        : pricePerUnit * quantity * contractLength
+      // Total contract value = monthly base price × 12 months
+      const totalContractValue = basePrice * 12
       
       const contractNumber = `CNT-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`
       
@@ -92,10 +85,10 @@ export default function NewContractPage() {
         endDate: endDate.getTime(),
         status: 'ACTIVE',
         totalContractValue,
-        quantity,
+        quantity: 1,
+        customPricing: null,
         createdAt: Date.now(),
         updatedAt: Date.now(),
-        ...(hasCustomPricing && { customPricing: pricePerUnit }),
       })
         .link({ customer: selectedCustomerId })
         .link({ subscriptionTier: selectedTierId })
@@ -211,69 +204,29 @@ export default function NewContractPage() {
               </div>
             )}
             
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="startDate">Start Date *</Label>
-                <Input 
-                  id="startDate" 
-                  name="startDate" 
-                  type="date" 
-                  defaultValue={new Date().toISOString().split('T')[0]}
-                  required 
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="contractLength">Contract Length (Months) *</Label>
-                <Input 
-                  id="contractLength" 
-                  name="contractLength" 
-                  type="number" 
-                  defaultValue="12"
-                  min="1"
-                  max="60"
-                  required 
-                />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="quantity">Quantity *</Label>
-                <Input 
-                  id="quantity" 
-                  name="quantity" 
-                  type="number" 
-                  defaultValue="1"
-                  min="1"
-                  required 
-                />
-                <p className="text-xs text-muted-foreground">
-                  Number of subscriptions
-                </p>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="customPricing">Custom Pricing (Optional)</Label>
-                <Input 
-                  id="customPricing" 
-                  name="customPricing" 
-                  type="number" 
-                  step="0.01"
-                  placeholder={selectedTier ? `${selectedTier.basePrice}` : '0'}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Leave blank to use standard pricing
-                </p>
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="startDate">Start Date *</Label>
+              <Input 
+                id="startDate" 
+                name="startDate" 
+                type="date" 
+                defaultValue={new Date().toISOString().split('T')[0]}
+                required 
+              />
+              <p className="text-xs text-muted-foreground">
+                Contract duration is fixed at 12 months
+              </p>
             </div>
             
             {selectedTier && (
-              <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
-                <div className="text-sm font-medium text-slate-900 mb-2">Contract Value Preview</div>
-                <div className="text-xs text-muted-foreground">
-                  This is an estimate. Actual value will be calculated based on your inputs.
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="text-sm font-medium text-slate-700 mb-1">Total Contract Value:</div>
+                <div className="text-2xl font-bold text-blue-700">
+                  ${(selectedTier.basePrice * 12).toLocaleString()}
                 </div>
+                <p className="text-xs text-slate-600 mt-1">
+                  Based on tier base price × 12 months
+                </p>
               </div>
             )}
             

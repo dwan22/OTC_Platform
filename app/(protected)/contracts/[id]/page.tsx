@@ -60,16 +60,14 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
       subscriptionTierId: contract.subscriptionTier?.id || '',
       startDate: new Date(contract.startDate).toISOString().split('T')[0],
       endDate: new Date(contract.endDate).toISOString().split('T')[0],
-      quantity: contract.quantity.toString(),
-      customPricing: contract.customPricing?.toString() || '',
       status: contract.status,
     })
     setIsEditing(true)
   }
   
   const handleSave = async () => {
-    if (!editFormData.subscriptionTierId || !editFormData.quantity) {
-      alert('Please fill in all required fields')
+    if (!editFormData.subscriptionTierId) {
+      alert('Please select a subscription tier')
       return
     }
     
@@ -77,23 +75,22 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
     
     try {
       const selectedTier = subscriptionTiers.find((t: any) => t.id === editFormData.subscriptionTierId)
-      const quantity = parseInt(editFormData.quantity)
-      const customPricing = editFormData.customPricing ? parseFloat(editFormData.customPricing) : null
-      const pricePerUnit = customPricing || selectedTier?.basePrice || 0
-      const totalContractValue = pricePerUnit * quantity
+      const basePrice = selectedTier?.basePrice || 0
+      
+      // Calculate total contract value as basePrice × 12 months
+      const totalContractValue = basePrice * 12
       
       const updateData: any = {
         startDate: new Date(editFormData.startDate + 'T00:00:00').getTime(),
         endDate: new Date(editFormData.endDate + 'T23:59:59').getTime(),
-        quantity,
+        quantity: 1,
         totalContractValue,
         status: editFormData.status,
         updatedAt: Date.now(),
       }
       
-      if (customPricing) {
-        updateData.customPricing = customPricing
-      }
+      // Remove customPricing if it exists
+      updateData.customPricing = null
       
       const tx = db.tx.contracts[contract.id].update(updateData)
       
@@ -222,18 +219,6 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="quantity">Quantity *</Label>
-                <Input
-                  id="quantity"
-                  type="number"
-                  value={editFormData.quantity}
-                  onChange={(e) => setEditFormData({ ...editFormData, quantity: e.target.value })}
-                  required
-                  disabled={isSaving}
-                />
-              </div>
-              
-              <div className="space-y-2">
                 <Label htmlFor="startDate">Start Date *</Label>
                 <Input
                   id="startDate"
@@ -268,19 +253,6 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="customPricing">Custom Pricing (Optional)</Label>
-                <Input
-                  id="customPricing"
-                  type="number"
-                  step="0.01"
-                  placeholder="Leave blank to use tier base price"
-                  value={editFormData.customPricing}
-                  onChange={(e) => setEditFormData({ ...editFormData, customPricing: e.target.value })}
-                  disabled={isSaving}
-                />
-              </div>
-              
-              <div className="space-y-2">
                 <Label htmlFor="status">Status *</Label>
                 <Select
                   value={editFormData.status}
@@ -298,6 +270,18 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
                 </Select>
               </div>
             </div>
+            
+            {editFormData.subscriptionTierId && (
+              <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="text-sm font-medium text-slate-700 mb-1">Calculated Total Contract Value:</div>
+                <div className="text-2xl font-bold text-blue-700">
+                  {formatCurrency((subscriptionTiers.find((t: any) => t.id === editFormData.subscriptionTierId)?.basePrice || 0) * 12)}
+                </div>
+                <p className="text-xs text-slate-600 mt-1">
+                  Based on tier base price × 12 months
+                </p>
+              </div>
+            )}
             
             <div className="flex gap-2 mt-6">
               <Button onClick={handleSave} disabled={isSaving}>
@@ -353,23 +337,15 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
                 <div className="text-base">{formatDate(contract.endDate)}</div>
               </div>
               <div>
-                <div className="text-sm font-medium text-muted-foreground">Quantity</div>
-                <div className="text-base">{contract.quantity}</div>
-              </div>
-              <div>
-                <div className="text-sm font-medium text-muted-foreground">Base Price</div>
+                <div className="text-sm font-medium text-muted-foreground">Monthly Price</div>
                 <div className="text-base">
                   {formatCurrency(contract.subscriptionTier?.basePrice || 0)}
                 </div>
               </div>
-              {contract.customPricing && (
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">Custom Pricing</div>
-                  <div className="text-base font-semibold text-blue-600">
-                    {formatCurrency(contract.customPricing)}
-                  </div>
-                </div>
-              )}
+              <div>
+                <div className="text-sm font-medium text-muted-foreground">Contract Duration</div>
+                <div className="text-base">12 months</div>
+              </div>
             </div>
             
             {contract.rebateTerms && (
