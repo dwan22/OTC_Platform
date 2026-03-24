@@ -36,6 +36,12 @@ export default function RevenueRecognitionPage() {
         customer: {},
       },
     },
+    invoices: {
+      customer: {},
+      contract: {
+        subscriptionTier: {},
+      },
+    },
     customers: {},
     subscriptionTiers: {},
   })
@@ -153,28 +159,23 @@ export default function RevenueRecognitionPage() {
       }
       
       if (!isFuture) {
-        contracts.forEach((contract: any) => {
-          const contractStart = new Date(contract.startDate)
-          const contractEnd = new Date(contract.endDate)
-          const totalValue = contract.totalContractValue || 0
+        // Calculate actual revenue from invoices for this month
+        const invoices = queryData?.invoices || []
+        invoices.forEach((invoice: any) => {
+          const invoiceDate = new Date(invoice.invoiceDate)
+          const invoiceMonth = startOfMonth(invoiceDate)
           
-          const contractStartMonth = new Date(contractStart.getFullYear(), contractStart.getMonth(), 1)
-          const contractEndMonth = new Date(contractEnd.getFullYear(), contractEnd.getMonth(), 1)
-          
-          if (monthStart < contractStartMonth || monthStart >= contractEndMonth) {
-            return
+          // Check if invoice belongs to this month and matches filters
+          if (invoiceMonth.getTime() === monthStart.getTime()) {
+            if (filters.subscriptionTier !== 'all' && invoice.contract?.subscriptionTier?.id !== filters.subscriptionTier) {
+              return
+            }
+            if (filters.customer !== 'all' && invoice.customer?.id !== filters.customer) {
+              return
+            }
+            
+            monthRevenue += invoice.totalAmount || 0
           }
-          
-          let totalMonths = 0
-          let currentMonth = new Date(contractStart.getFullYear(), contractStart.getMonth(), 1)
-          
-          while (currentMonth < contractEndMonth) {
-            totalMonths++
-            currentMonth = addMonths(currentMonth, 1)
-          }
-          
-          const monthlyRevenue = totalValue / totalMonths
-          monthRevenue += monthlyRevenue
         })
       }
       
@@ -321,7 +322,7 @@ export default function RevenueRecognitionPage() {
               <CardTitle className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Scheduled</CardTitle>
               <div className="group relative">
                 <Info className="h-3.5 w-3.5 text-slate-400 cursor-help" />
-                <div className="invisible group-hover:visible absolute left-0 top-6 w-64 p-3 bg-slate-900 text-white text-xs rounded shadow-xl z-10">
+                <div className="invisible group-hover:visible absolute left-0 top-6 w-64 p-3 bg-slate-900 text-white text-xs rounded shadow-xl z-50 whitespace-normal">
                   Total contract value across all active contracts that will be recognized over time
                 </div>
               </div>
@@ -339,7 +340,7 @@ export default function RevenueRecognitionPage() {
               <CardTitle className="text-xs font-semibold uppercase tracking-wider text-slate-500">Revenue Recognized</CardTitle>
               <div className="group relative">
                 <Info className="h-3.5 w-3.5 text-slate-400 cursor-help" />
-                <div className="invisible group-hover:visible absolute left-0 top-6 w-64 p-3 bg-slate-900 text-white text-xs rounded shadow-xl z-10">
+                <div className="invisible group-hover:visible absolute left-0 top-6 w-64 p-3 bg-slate-900 text-white text-xs rounded shadow-xl z-50 whitespace-normal">
                   Revenue that has been earned to date based on service delivery (straight-line recognition)
                 </div>
               </div>
@@ -357,7 +358,7 @@ export default function RevenueRecognitionPage() {
               <CardTitle className="text-xs font-semibold uppercase tracking-wider text-slate-500">Deferred Revenue</CardTitle>
               <div className="group relative">
                 <Info className="h-3.5 w-3.5 text-slate-400 cursor-help" />
-                <div className="invisible group-hover:visible absolute left-0 top-6 w-64 p-3 bg-slate-900 text-white text-xs rounded shadow-xl z-10">
+                <div className="invisible group-hover:visible absolute left-0 top-6 w-64 p-3 bg-slate-900 text-white text-xs rounded shadow-xl z-50 whitespace-normal">
                   Revenue that has been billed but not yet earned (liability on balance sheet)
                 </div>
               </div>
@@ -375,7 +376,7 @@ export default function RevenueRecognitionPage() {
               <CardTitle className="text-xs font-semibold uppercase tracking-wider text-slate-500">Recognition Rate</CardTitle>
               <div className="group relative">
                 <Info className="h-3.5 w-3.5 text-slate-400 cursor-help" />
-                <div className="invisible group-hover:visible absolute left-0 top-6 w-64 p-3 bg-slate-900 text-white text-xs rounded shadow-xl z-10">
+                <div className="invisible group-hover:visible absolute left-0 top-6 w-64 p-3 bg-slate-900 text-white text-xs rounded shadow-xl z-50 whitespace-normal">
                   Percentage of total scheduled revenue that has been recognized to date
                 </div>
               </div>
@@ -473,9 +474,9 @@ export default function RevenueRecognitionPage() {
           <div className="mt-6 p-5 bg-gradient-to-r from-blue-100 to-blue-50 border-2 border-blue-300 rounded-lg shadow-md">
             <div className="flex items-start gap-3">
               <Info className="h-6 w-6 text-blue-700 mt-0.5 flex-shrink-0" />
-              <div>
+              <div className="flex-1">
                 <h4 className="text-base font-bold text-blue-900 mb-2">💡 How Forecasting Works</h4>
-                <p className="text-sm text-blue-900 font-medium">
+                <p className="text-sm text-blue-900 font-medium leading-relaxed">
                   The forecast uses your current MRR and applies the growth rate, churn rate, and new contract assumptions 
                   to project future revenue. <span className="font-bold text-blue-700">Try changing the values above to see real-time updates in the chart below!</span>
                 </p>
