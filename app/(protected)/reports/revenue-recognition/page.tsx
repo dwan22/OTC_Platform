@@ -175,7 +175,7 @@ export default function RevenueRecognitionPage() {
       const isFuture = monthStart > today
       
       if (isFuture) {
-        // Calculate base forecast from contracts amortized over their life
+        // Calculate base forecast from contracts amortized over their life for THIS specific month
         let baseForecast = 0
         
         // Calculate revenue from active contracts that extend into this future month
@@ -210,20 +210,21 @@ export default function RevenueRecognitionPage() {
           }
         })
         
-        // Apply growth assumptions on top of base forecast
+        // Apply growth assumptions: adjust the base forecast for this specific month
+        // Growth is applied as a simple multiplier based on months from today
         const monthsFromToday = i
-        let projectedMRR = baseForecast
+        let adjustmentFactor = 1.0
         
-        // Apply growth for each month from today to the target month
+        // Apply cumulative growth/churn for the number of months out
         for (let m = 1; m <= monthsFromToday; m++) {
           const growthFactor = 1 + (monthlyGrowthRate / 100)
           const churnFactor = 1 - (churnRate / 100)
-          const newRevenue = newContractsPerMonth * (newContractValue / 12)
-          
-          projectedMRR = (projectedMRR * growthFactor * churnFactor) + newRevenue
+          adjustmentFactor *= growthFactor * churnFactor
         }
         
-        forecastRevenue = Math.max(0, projectedMRR)
+        // Apply the adjustment to base forecast and add new contract revenue
+        const newContractRevenue = newContractsPerMonth * monthsFromToday * (newContractValue / 12)
+        forecastRevenue = Math.max(0, (baseForecast * adjustmentFactor) + newContractRevenue)
       }
       
       if (!isFuture) {
