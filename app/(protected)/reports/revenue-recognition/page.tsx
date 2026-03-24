@@ -174,7 +174,8 @@ export default function RevenueRecognitionPage() {
       const isCurrent = monthStart <= today && monthEnd >= today
       const isFuture = monthStart > today
       
-      if (isFuture) {
+      // Calculate forecast for current and future months
+      if (isFuture || isCurrent) {
         // Calculate base forecast from contracts amortized over their life for THIS specific month
         let baseForecast = 0
         
@@ -227,6 +228,8 @@ export default function RevenueRecognitionPage() {
         const monthsFromToday = i
         let adjustmentFactor = 1.0
         
+        console.log(`Months from today (i): ${monthsFromToday}`)
+        
         // Apply cumulative growth/churn for the number of months out
         for (let m = 1; m <= monthsFromToday; m++) {
           const growthFactor = 1 + (monthlyGrowthRate / 100)
@@ -234,9 +237,12 @@ export default function RevenueRecognitionPage() {
           adjustmentFactor *= growthFactor * churnFactor
         }
         
+        console.log(`Adjustment factor: ${adjustmentFactor}`)
+        
         // Apply the adjustment to base forecast and add new contract revenue
         const newContractRevenue = newContractsPerMonth * monthsFromToday * (newContractValue / 12)
         forecastRevenue = Math.max(0, (baseForecast * adjustmentFactor) + newContractRevenue)
+        console.log(`New contract revenue: ${newContractRevenue}, Final forecast: ${forecastRevenue}`)
       }
       
       if (!isFuture) {
