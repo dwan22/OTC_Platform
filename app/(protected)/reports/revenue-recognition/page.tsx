@@ -178,6 +178,11 @@ export default function RevenueRecognitionPage() {
         // Calculate base forecast from contracts amortized over their life for THIS specific month
         let baseForecast = 0
         
+        console.log(`\n=== Calculating forecast for ${monthKey} ===`)
+        console.log(`Total contracts: ${contracts.length}`)
+        console.log(`Month start: ${monthStart.toISOString()}`)
+        console.log(`Month end: ${monthEnd.toISOString()}`)
+        
         // Calculate revenue from active contracts that extend into this future month
         contracts.forEach((contract: any) => {
           if (contract.status === 'VOID') return
@@ -185,6 +190,8 @@ export default function RevenueRecognitionPage() {
           const contractStart = new Date(contract.startDate)
           const contractEnd = new Date(contract.endDate)
           const totalValue = contract.totalContractValue || 0
+          
+          console.log(`Contract ${contract.contractNumber}: ${contractStart.toISOString()} to ${contractEnd.toISOString()}, value: ${totalValue}, status: ${contract.status}`)
           
           // Check if this contract's period covers this future month
           if (contractStart <= monthEnd && contractEnd > monthStart) {
@@ -203,12 +210,17 @@ export default function RevenueRecognitionPage() {
             // Amortize contract value over its life
             const monthlyAmount = totalValue / totalMonths
             
+            console.log(`  -> Covers this month! Monthly amount: ${monthlyAmount}, Total months: ${totalMonths}`)
+            
             // Check if this month falls within the contract period
             if (monthStart >= contractStartMonth && monthStart < contractEndMonth) {
               baseForecast += monthlyAmount
+              console.log(`  -> Added to forecast! Running total: ${baseForecast}`)
             }
           }
         })
+        
+        console.log(`Base forecast for ${monthKey}: ${baseForecast}`)
         
         // Apply growth assumptions: adjust the base forecast for this specific month
         // Growth is applied as a simple multiplier based on months from today
