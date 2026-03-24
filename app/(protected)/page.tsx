@@ -79,12 +79,9 @@ export default function DashboardPage() {
       const servicePeriodEnd = new Date(invoice.servicePeriodEnd)
       const totalAmount = invoice.totalAmount || 0
       
-      // Check if service period aligns with calendar months
-      const servicePeriodStartMonth = startOfMonth(servicePeriodStart)
-      const servicePeriodEndMonth = endOfMonth(servicePeriodEnd)
-      
-      const isMonthAligned = servicePeriodStart.getTime() === servicePeriodStartMonth.getTime() && 
-                             servicePeriodEnd.getTime() === servicePeriodEndMonth.getTime()
+      // Check if service period aligns with calendar months (starts on 1st, ends on last day)
+      const isMonthAligned = servicePeriodStart.getDate() === 1 && 
+                             servicePeriodEnd.getDate() === new Date(servicePeriodEnd.getFullYear(), servicePeriodEnd.getMonth() + 1, 0).getDate()
       
       if (isMonthAligned) {
         // Calculate number of full months in service period
@@ -98,7 +95,7 @@ export default function DashboardPage() {
         }
         
         // Check if current month is within the service period
-        if (currentMonthStart >= servicePeriodStartMonth && currentMonthStart <= endMonth) {
+        if (currentMonthStart >= startOfMonth(servicePeriodStart) && currentMonthStart <= endMonth) {
           currentMRR += totalAmount / monthCount
         }
       } else {
@@ -137,27 +134,75 @@ export default function DashboardPage() {
     
     const mrrGrowth = 12.5
     
+    // Calculate historical MRR from invoices for the past 6 months
     const chartData = []
     
     for (let i = 5; i >= 0; i--) {
       const monthDate = subMonths(today, i)
       const monthKey = format(monthDate, 'MMM')
-      const mrr = currentMRR * (0.7 + ((5 - i) * 0.06))
+      const monthStart = startOfMonth(monthDate)
+      const monthEnd = endOfMonth(monthDate)
+      
+      let monthMRR = 0
+      
+      invoices.forEach((invoice: any) => {
+        if (!invoice.servicePeriodStart || !invoice.servicePeriodEnd) {
+          return
+        }
+        
+        const servicePeriodStart = new Date(invoice.servicePeriodStart)
+        const servicePeriodEnd = new Date(invoice.servicePeriodEnd)
+        const totalAmount = invoice.totalAmount || 0
+        
+        // Check if service period aligns with calendar months
+        const servicePeriodStartMonth = startOfMonth(servicePeriodStart)
+        const servicePeriodEndMonth = endOfMonth(servicePeriodEnd)
+        
+        const isMonthAligned = servicePeriodStart.getDate() === 1 && 
+                               servicePeriodEnd.getDate() === new Date(servicePeriodEnd.getFullYear(), servicePeriodEnd.getMonth() + 1, 0).getDate()
+        
+        if (isMonthAligned) {
+          let monthCount = 0
+          let currentMonth = startOfMonth(servicePeriodStart)
+          const endMonth = startOfMonth(servicePeriodEnd)
+          
+          while (currentMonth <= endMonth) {
+            monthCount++
+            currentMonth = addMonths(currentMonth, 1)
+          }
+          
+          if (monthStart >= servicePeriodStartMonth && monthStart <= endMonth) {
+            monthMRR += totalAmount / monthCount
+          }
+        } else {
+          const totalDays = Math.max(1, Math.floor((servicePeriodEnd.getTime() - servicePeriodStart.getTime()) / (1000 * 60 * 60 * 24)))
+          const dailyRate = totalAmount / totalDays
+          
+          const overlapStart = monthStart > servicePeriodStart ? monthStart : servicePeriodStart
+          const overlapEnd = monthEnd < servicePeriodEnd ? monthEnd : servicePeriodEnd
+          
+          if (overlapEnd > overlapStart) {
+            const overlapDays = Math.floor((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24)) + 1
+            const monthlyRevenue = dailyRate * overlapDays
+            monthMRR += monthlyRevenue
+          }
+        }
+      })
       
       chartData.push({
         month: monthKey,
-        MRR: Math.round(mrr),
+        MRR: Math.round(monthMRR),
       })
     }
     
     const outstandingInvoices = invoices.filter((inv: any) => inv.status !== 'PAID' && inv.status !== 'VOID')
     
     const byBucket = [
-      { bucket: 'Current', min: 0, max: 30 },
-      { bucket: '1-30', min: 31, max: 60 },
-      { bucket: '31-60', min: 61, max: 90 },
-      { bucket: '61-90', min: 91, max: 120 },
-      { bucket: '90+', min: 121, max: 999999 },
+      { bucket: 'Current', min: -999999, max: 30, reservePct: 0.01 },
+      { bucket: '31-60', min: 31, max: 60, reservePct: 0.05 },
+      { bucket: '61-90', min: 61, max: 90, reservePct: 0.15 },
+      { bucket: '91-120', min: 91, max: 120, reservePct: 0.35 },
+      { bucket: '120+', min: 121, max: 999999, reservePct: 0.75 },
     ].map(bucket => {
       const bucketInvoices = outstandingInvoices.filter((inv: any) => {
         const dueDate = new Date(inv.dueDate)
@@ -170,15 +215,10 @@ export default function DashboardPage() {
         return sum + (inv.totalAmount - paid)
       }, 0)
       
-      const reservePct = bucket.bucket === 'Current' ? 0.01 : 
-                         bucket.bucket === '1-30' ? 0.05 :
-                         bucket.bucket === '31-60' ? 0.15 :
-                         bucket.bucket === '61-90' ? 0.35 : 0.75
-      
       return {
         name: bucket.bucket,
         'AR Balance': Math.round(totalAR),
-        'Reserve': Math.round(totalAR * reservePct),
+        'Reserve': Math.round(totalAR * bucket.reservePct),
       }
     })
     

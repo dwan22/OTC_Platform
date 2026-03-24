@@ -101,12 +101,9 @@ export default function PnLFluxPage() {
         const servicePeriodEnd = new Date(invoice.servicePeriodEnd)
         const totalAmount = invoice.totalAmount || 0
         
-        // Check if service period aligns with calendar months
-        const servicePeriodStartMonth = startOfMonth(servicePeriodStart)
-        const servicePeriodEndMonth = endOfMonth(servicePeriodEnd)
-        
-        const isMonthAligned = servicePeriodStart.getTime() === servicePeriodStartMonth.getTime() && 
-                               servicePeriodEnd.getTime() === servicePeriodEndMonth.getTime()
+        // Check if service period aligns with calendar months (starts on 1st, ends on last day)
+        const isMonthAligned = servicePeriodStart.getDate() === 1 && 
+                               servicePeriodEnd.getDate() === new Date(servicePeriodEnd.getFullYear(), servicePeriodEnd.getMonth() + 1, 0).getDate()
         
         if (isMonthAligned) {
           // Calculate number of full months in service period
@@ -120,7 +117,7 @@ export default function PnLFluxPage() {
           }
           
           // Check if this month is within the service period
-          if (monthStart >= servicePeriodStartMonth && monthStart <= endMonth) {
+          if (monthStart >= startOfMonth(servicePeriodStart) && monthStart <= endMonth) {
             monthRevenue += totalAmount / monthCount
           }
         } else {
@@ -165,12 +162,9 @@ export default function PnLFluxPage() {
         const servicePeriodEnd = new Date(invoice.servicePeriodEnd)
         const totalAmount = invoice.totalAmount || 0
         
-        // Check if service period aligns with calendar months
-        const servicePeriodStartMonth = startOfMonth(servicePeriodStart)
-        const servicePeriodEndMonth = endOfMonth(servicePeriodEnd)
-        
-        const isMonthAligned = servicePeriodStart.getTime() === servicePeriodStartMonth.getTime() && 
-                               servicePeriodEnd.getTime() === servicePeriodEndMonth.getTime()
+        // Check if service period aligns with calendar months (starts on 1st, ends on last day)
+        const isMonthAligned = servicePeriodStart.getDate() === 1 && 
+                               servicePeriodEnd.getDate() === new Date(servicePeriodEnd.getFullYear(), servicePeriodEnd.getMonth() + 1, 0).getDate()
         
         if (isMonthAligned) {
           // Calculate number of full months in service period
