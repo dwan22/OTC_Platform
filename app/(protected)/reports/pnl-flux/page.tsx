@@ -101,16 +101,41 @@ export default function PnLFluxPage() {
         const servicePeriodEnd = new Date(invoice.servicePeriodEnd)
         const totalAmount = invoice.totalAmount || 0
         
-        const totalDays = Math.max(1, Math.floor((servicePeriodEnd.getTime() - servicePeriodStart.getTime()) / (1000 * 60 * 60 * 24)))
-        const dailyRate = totalAmount / totalDays
+        // Check if service period aligns with calendar months
+        const servicePeriodStartMonth = startOfMonth(servicePeriodStart)
+        const servicePeriodEndMonth = endOfMonth(servicePeriodEnd)
         
-        const overlapStart = monthStart > servicePeriodStart ? monthStart : servicePeriodStart
-        const overlapEnd = monthEnd < servicePeriodEnd ? monthEnd : servicePeriodEnd
+        const isMonthAligned = servicePeriodStart.getTime() === servicePeriodStartMonth.getTime() && 
+                               servicePeriodEnd.getTime() === servicePeriodEndMonth.getTime()
         
-        if (overlapEnd > overlapStart) {
-          const overlapDays = Math.floor((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24)) + 1
-          const monthlyRevenue = dailyRate * overlapDays
-          monthRevenue += monthlyRevenue
+        if (isMonthAligned) {
+          // Calculate number of full months in service period
+          let monthCount = 0
+          let currentMonth = startOfMonth(servicePeriodStart)
+          const endMonth = startOfMonth(servicePeriodEnd)
+          
+          while (currentMonth <= endMonth) {
+            monthCount++
+            currentMonth = addMonths(currentMonth, 1)
+          }
+          
+          // Check if this month is within the service period
+          if (monthStart >= servicePeriodStartMonth && monthStart <= endMonth) {
+            monthRevenue += totalAmount / monthCount
+          }
+        } else {
+          // Use daily rate for non-aligned periods
+          const totalDays = Math.max(1, Math.floor((servicePeriodEnd.getTime() - servicePeriodStart.getTime()) / (1000 * 60 * 60 * 24)))
+          const dailyRate = totalAmount / totalDays
+          
+          const overlapStart = monthStart > servicePeriodStart ? monthStart : servicePeriodStart
+          const overlapEnd = monthEnd < servicePeriodEnd ? monthEnd : servicePeriodEnd
+          
+          if (overlapEnd > overlapStart) {
+            const overlapDays = Math.floor((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24)) + 1
+            const monthlyRevenue = dailyRate * overlapDays
+            monthRevenue += monthlyRevenue
+          }
         }
       })
       
@@ -140,17 +165,50 @@ export default function PnLFluxPage() {
         const servicePeriodEnd = new Date(invoice.servicePeriodEnd)
         const totalAmount = invoice.totalAmount || 0
         
-        const totalDays = Math.max(1, Math.floor((servicePeriodEnd.getTime() - servicePeriodStart.getTime()) / (1000 * 60 * 60 * 24)))
-        const dailyRate = totalAmount / totalDays
+        // Check if service period aligns with calendar months
+        const servicePeriodStartMonth = startOfMonth(servicePeriodStart)
+        const servicePeriodEndMonth = endOfMonth(servicePeriodEnd)
         
-        // Calculate overlap between YTD period and service period
-        const recognitionStart = servicePeriodStart > yearStart ? servicePeriodStart : yearStart
-        const recognitionEnd = servicePeriodEnd < today ? servicePeriodEnd : today
+        const isMonthAligned = servicePeriodStart.getTime() === servicePeriodStartMonth.getTime() && 
+                               servicePeriodEnd.getTime() === servicePeriodEndMonth.getTime()
         
-        if (recognitionEnd > recognitionStart) {
-          const daysRecognized = Math.floor((recognitionEnd.getTime() - recognitionStart.getTime()) / (1000 * 60 * 60 * 24)) + 1
-          const recognizedAmount = dailyRate * daysRecognized
-          totalRecognizedRevenue += recognizedAmount
+        if (isMonthAligned) {
+          // Calculate number of full months in service period
+          let monthCount = 0
+          let currentMonth = startOfMonth(servicePeriodStart)
+          const endMonth = startOfMonth(servicePeriodEnd)
+          
+          while (currentMonth <= endMonth) {
+            monthCount++
+            currentMonth = addMonths(currentMonth, 1)
+          }
+          
+          const monthlyAmount = totalAmount / monthCount
+          
+          // Count how many months fall within YTD
+          let ytdMonths = 0
+          currentMonth = startOfMonth(servicePeriodStart)
+          while (currentMonth <= endMonth) {
+            if (currentMonth >= startOfMonth(yearStart) && currentMonth <= startOfMonth(today)) {
+              ytdMonths++
+            }
+            currentMonth = addMonths(currentMonth, 1)
+          }
+          
+          totalRecognizedRevenue += monthlyAmount * ytdMonths
+        } else {
+          // Use daily rate for non-aligned periods
+          const totalDays = Math.max(1, Math.floor((servicePeriodEnd.getTime() - servicePeriodStart.getTime()) / (1000 * 60 * 60 * 24)))
+          const dailyRate = totalAmount / totalDays
+          
+          const recognitionStart = servicePeriodStart > yearStart ? servicePeriodStart : yearStart
+          const recognitionEnd = servicePeriodEnd < today ? servicePeriodEnd : today
+          
+          if (recognitionEnd > recognitionStart) {
+            const daysRecognized = Math.floor((recognitionEnd.getTime() - recognitionStart.getTime()) / (1000 * 60 * 60 * 24)) + 1
+            const recognizedAmount = dailyRate * daysRecognized
+            totalRecognizedRevenue += recognizedAmount
+          }
         }
       })
     }

@@ -126,16 +126,41 @@ export default function RevenueRecognitionPage() {
       const servicePeriodEnd = new Date(invoice.servicePeriodEnd)
       const totalAmount = invoice.totalAmount || 0
       
-      const totalDays = Math.max(1, Math.floor((servicePeriodEnd.getTime() - servicePeriodStart.getTime()) / (1000 * 60 * 60 * 24)))
-      const dailyRate = totalAmount / totalDays
+      // Check if service period aligns with calendar months
+      const servicePeriodStartMonth = startOfMonth(servicePeriodStart)
+      const servicePeriodEndMonth = endOfMonth(servicePeriodEnd)
       
-      const overlapStart = currentMonthStart > servicePeriodStart ? currentMonthStart : servicePeriodStart
-      const overlapEnd = currentMonthEnd < servicePeriodEnd ? currentMonthEnd : servicePeriodEnd
+      const isMonthAligned = servicePeriodStart.getTime() === servicePeriodStartMonth.getTime() && 
+                             servicePeriodEnd.getTime() === servicePeriodEndMonth.getTime()
       
-      if (overlapEnd > overlapStart) {
-        const overlapDays = Math.floor((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24)) + 1
-        const monthlyRevenue = dailyRate * overlapDays
-        currentMRR += monthlyRevenue
+      if (isMonthAligned) {
+        // Calculate number of full months in service period
+        let monthCount = 0
+        let currentMonth = startOfMonth(servicePeriodStart)
+        const endMonth = startOfMonth(servicePeriodEnd)
+        
+        while (currentMonth <= endMonth) {
+          monthCount++
+          currentMonth = addMonths(currentMonth, 1)
+        }
+        
+        // Check if current month is within the service period
+        if (currentMonthStart >= servicePeriodStartMonth && currentMonthStart <= endMonth) {
+          currentMRR += totalAmount / monthCount
+        }
+      } else {
+        // Use daily rate for non-aligned periods
+        const totalDays = Math.max(1, Math.floor((servicePeriodEnd.getTime() - servicePeriodStart.getTime()) / (1000 * 60 * 60 * 24)))
+        const dailyRate = totalAmount / totalDays
+        
+        const overlapStart = currentMonthStart > servicePeriodStart ? currentMonthStart : servicePeriodStart
+        const overlapEnd = currentMonthEnd < servicePeriodEnd ? currentMonthEnd : servicePeriodEnd
+        
+        if (overlapEnd > overlapStart) {
+          const overlapDays = Math.floor((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24)) + 1
+          const monthlyRevenue = dailyRate * overlapDays
+          currentMRR += monthlyRevenue
+        }
       }
     })
     
@@ -152,23 +177,20 @@ export default function RevenueRecognitionPage() {
       const isCurrent = monthStart <= today && monthEnd >= today
       const isFuture = monthStart > today
       
-      if (isFuture || isPast || isCurrent) {
+      if (isFuture) {
+        // Only forecast for future months, not past
         const monthsFromToday = i
         let projectedMRR = currentMRR
         
-        for (let m = 1; m <= Math.abs(monthsFromToday); m++) {
+        for (let m = 1; m <= monthsFromToday; m++) {
           const growthFactor = 1 + (monthlyGrowthRate / 100)
           const churnFactor = 1 - (churnRate / 100)
           const newRevenue = newContractsPerMonth * (newContractValue / 12)
           
-          if (monthsFromToday > 0) {
-            projectedMRR = (projectedMRR * growthFactor * churnFactor) + newRevenue
-          } else {
-            projectedMRR = (projectedMRR / (growthFactor * churnFactor)) - newRevenue
-          }
+          projectedMRR = (projectedMRR * growthFactor * churnFactor) + newRevenue
         }
         
-        forecastRevenue = projectedMRR
+        forecastRevenue = Math.max(0, projectedMRR)
       }
       
       if (!isFuture) {
@@ -192,18 +214,42 @@ export default function RevenueRecognitionPage() {
           const servicePeriodEnd = new Date(invoice.servicePeriodEnd)
           const totalAmount = invoice.totalAmount || 0
           
-          // Calculate total days in service period
-          const totalDays = Math.max(1, Math.floor((servicePeriodEnd.getTime() - servicePeriodStart.getTime()) / (1000 * 60 * 60 * 24)))
-          const dailyRate = totalAmount / totalDays
+          // Check if service period aligns with calendar months
+          const servicePeriodStartMonth = startOfMonth(servicePeriodStart)
+          const servicePeriodEndMonth = endOfMonth(servicePeriodEnd)
           
-          // Calculate overlap between this month and the service period
-          const overlapStart = monthStart > servicePeriodStart ? monthStart : servicePeriodStart
-          const overlapEnd = monthEnd < servicePeriodEnd ? monthEnd : servicePeriodEnd
+          // If service period starts at month start and ends at month end, use monthly allocation
+          const isMonthAligned = servicePeriodStart.getTime() === servicePeriodStartMonth.getTime() && 
+                                 servicePeriodEnd.getTime() === servicePeriodEndMonth.getTime()
           
-          if (overlapEnd > overlapStart) {
-            const overlapDays = Math.floor((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24)) + 1
-            const monthlyRevenue = dailyRate * overlapDays
-            monthRevenue += monthlyRevenue
+          if (isMonthAligned) {
+            // Calculate number of full months in service period
+            let monthCount = 0
+            let currentMonth = startOfMonth(servicePeriodStart)
+            const endMonth = startOfMonth(servicePeriodEnd)
+            
+            while (currentMonth <= endMonth) {
+              monthCount++
+              currentMonth = addMonths(currentMonth, 1)
+            }
+            
+            // Check if this month is within the service period
+            if (monthStart >= servicePeriodStartMonth && monthStart <= endMonth) {
+              monthRevenue += totalAmount / monthCount
+            }
+          } else {
+            // Use daily rate for non-aligned periods
+            const totalDays = Math.max(1, Math.floor((servicePeriodEnd.getTime() - servicePeriodStart.getTime()) / (1000 * 60 * 60 * 24)))
+            const dailyRate = totalAmount / totalDays
+            
+            const overlapStart = monthStart > servicePeriodStart ? monthStart : servicePeriodStart
+            const overlapEnd = monthEnd < servicePeriodEnd ? monthEnd : servicePeriodEnd
+            
+            if (overlapEnd > overlapStart) {
+              const overlapDays = Math.floor((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24)) + 1
+              const monthlyRevenue = dailyRate * overlapDays
+              monthRevenue += monthlyRevenue
+            }
           }
         })
       }
