@@ -50,15 +50,30 @@ export default function RevenueRecognitionPage() {
     if (!queryData?.contracts) return null
     
     const allContracts = queryData.contracts
+    console.log(`\n=== ALL CONTRACTS (before filtering) ===`)
+    console.log(`Total contracts in database: ${allContracts.length}`)
+    allContracts.forEach((c: any) => {
+      console.log(`${c.contractNumber}: ${c.customer?.companyName}, Value: $${c.totalContractValue}, Status: ${c.status}, ${new Date(c.startDate).toLocaleDateString()} - ${new Date(c.endDate).toLocaleDateString()}`)
+    })
+    
     let contracts = allContracts.filter((c: any) => c.status !== 'VOID')
+    
+    console.log(`\nAfter removing VOID: ${contracts.length} contracts`)
     
     if (filters.subscriptionTier && filters.subscriptionTier !== 'all') {
       contracts = contracts.filter((c: any) => c.subscriptionTier?.id === filters.subscriptionTier)
+      console.log(`After tier filter: ${contracts.length} contracts`)
     }
     
     if (filters.customer && filters.customer !== 'all') {
       contracts = contracts.filter((c: any) => c.customer?.id === filters.customer)
+      console.log(`After customer filter: ${contracts.length} contracts`)
     }
+    
+    console.log(`\n=== FINAL FILTERED CONTRACTS ===`)
+    contracts.forEach((c: any) => {
+      console.log(`${c.contractNumber}: Value: $${c.totalContractValue}, ${new Date(c.startDate).toLocaleDateString()} - ${new Date(c.endDate).toLocaleDateString()}`)
+    })
     
     const today = new Date()
     
@@ -174,8 +189,8 @@ export default function RevenueRecognitionPage() {
       const isCurrent = monthStart <= today && monthEnd >= today
       const isFuture = monthStart > today
       
-      // Calculate forecast for current and future months
-      if (isFuture || isCurrent) {
+      // Only show forecast for current month onwards (not past months)
+      if (isCurrent || isFuture) {
         // Calculate base forecast from contracts amortized over their life for THIS specific month
         let baseForecast = 0
         
