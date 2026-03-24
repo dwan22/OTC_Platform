@@ -83,7 +83,7 @@ export default function PnLFluxPage() {
       })
     }
     
-    // Calculate revenue by month for all contracts
+    // Calculate revenue by month from invoices (matching Revenue Recognition)
     const monthlyRevenueMap = new Map()
     
     availableMonths.forEach(({ key, date }) => {
@@ -92,30 +92,26 @@ export default function PnLFluxPage() {
       
       let monthRevenue = 0
       
-      activeContracts.forEach((contract: any) => {
-        const contractStart = new Date(contract.startDate)
-        const contractEnd = new Date(contract.endDate)
-        const totalValue = contract.totalContractValue || 0
-        
-        const contractStartMonth = new Date(contractStart.getFullYear(), contractStart.getMonth(), 1)
-        const contractEndMonth = new Date(contractEnd.getFullYear(), contractEnd.getMonth(), 1)
-        
-        // Skip if this month is outside the contract's service period (end date is exclusive)
-        if (monthStart < contractStartMonth || monthStart >= contractEndMonth) {
+      invoices.forEach((invoice: any) => {
+        if (!invoice.servicePeriodStart || !invoice.servicePeriodEnd) {
           return
         }
         
-        // Calculate total months in contract
-        let totalMonths = 0
-        let currentMonth = new Date(contractStart.getFullYear(), contractStart.getMonth(), 1)
+        const servicePeriodStart = new Date(invoice.servicePeriodStart)
+        const servicePeriodEnd = new Date(invoice.servicePeriodEnd)
+        const totalAmount = invoice.totalAmount || 0
         
-        while (currentMonth < contractEndMonth) {
-          totalMonths++
-          currentMonth = addMonths(currentMonth, 1)
+        const totalDays = Math.max(1, Math.floor((servicePeriodEnd.getTime() - servicePeriodStart.getTime()) / (1000 * 60 * 60 * 24)))
+        const dailyRate = totalAmount / totalDays
+        
+        const overlapStart = monthStart > servicePeriodStart ? monthStart : servicePeriodStart
+        const overlapEnd = monthEnd < servicePeriodEnd ? monthEnd : servicePeriodEnd
+        
+        if (overlapEnd > overlapStart) {
+          const overlapDays = Math.floor((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24)) + 1
+          const monthlyRevenue = dailyRate * overlapDays
+          monthRevenue += monthlyRevenue
         }
-        
-        const monthlyRevenue = totalValue / totalMonths
-        monthRevenue += monthlyRevenue
       })
       
       monthlyRevenueMap.set(key, monthRevenue)
@@ -132,31 +128,30 @@ export default function PnLFluxPage() {
       })
       periodLabel = selectedMonths.length === 1 ? selectedMonths[0] : `${selectedMonths.length} months`
     } else {
-      // YTD calculation (Jan to current month)
+      // YTD calculation (Jan to current month) using invoice service periods
       const yearStart = new Date(today.getFullYear(), 0, 1)
       
-      activeContracts.forEach((contract: any) => {
-        const contractStart = new Date(contract.startDate)
-        const contractEnd = new Date(contract.endDate)
-        const totalValue = contract.totalContractValue || 0
-        
-        // Calculate total contract days
-        const totalContractDays = Math.max(1, Math.floor((contractEnd.getTime() - contractStart.getTime()) / (1000 * 60 * 60 * 24)) + 1)
-        const dailyRate = totalValue / totalContractDays
-        
-        // Calculate days from contract start to today (or contract end if already ended)
-        const recognitionEnd = contractEnd < today ? contractEnd : today
-        const recognitionStart = contractStart > yearStart ? contractStart : (contractStart < yearStart ? yearStart : contractStart)
-        
-        // Only recognize if contract has started and overlaps with this year
-        if (recognitionEnd < yearStart || recognitionStart > today) {
+      invoices.forEach((invoice: any) => {
+        if (!invoice.servicePeriodStart || !invoice.servicePeriodEnd) {
           return
         }
         
-        const daysRecognized = Math.max(0, Math.floor((recognitionEnd.getTime() - recognitionStart.getTime()) / (1000 * 60 * 60 * 24)) + 1)
-        const recognizedAmount = dailyRate * daysRecognized
+        const servicePeriodStart = new Date(invoice.servicePeriodStart)
+        const servicePeriodEnd = new Date(invoice.servicePeriodEnd)
+        const totalAmount = invoice.totalAmount || 0
         
-        totalRecognizedRevenue += recognizedAmount
+        const totalDays = Math.max(1, Math.floor((servicePeriodEnd.getTime() - servicePeriodStart.getTime()) / (1000 * 60 * 60 * 24)))
+        const dailyRate = totalAmount / totalDays
+        
+        // Calculate overlap between YTD period and service period
+        const recognitionStart = servicePeriodStart > yearStart ? servicePeriodStart : yearStart
+        const recognitionEnd = servicePeriodEnd < today ? servicePeriodEnd : today
+        
+        if (recognitionEnd > recognitionStart) {
+          const daysRecognized = Math.floor((recognitionEnd.getTime() - recognitionStart.getTime()) / (1000 * 60 * 60 * 24)) + 1
+          const recognizedAmount = dailyRate * daysRecognized
+          totalRecognizedRevenue += recognizedAmount
+        }
       })
     }
     

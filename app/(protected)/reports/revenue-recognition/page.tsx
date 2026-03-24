@@ -103,26 +103,39 @@ export default function RevenueRecognitionPage() {
     // Calculate monthly revenue waterfall
     const monthlyMap = new Map()
     
-    // Calculate the current MRR from active contracts
+    // Calculate the current MRR from invoices for the current month
+    const currentMonthStart = startOfMonth(today)
+    const currentMonthEnd = endOfMonth(today)
     let currentMRR = 0
-    contracts.forEach((contract: any) => {
-      const contractStart = new Date(contract.startDate)
-      const contractEnd = new Date(contract.endDate)
-      const totalValue = contract.totalContractValue || 0
+    
+    const invoices = queryData?.invoices || []
+    invoices.forEach((invoice: any) => {
+      // Apply filters
+      if (filters.subscriptionTier !== 'all' && invoice.contract?.subscriptionTier?.id !== filters.subscriptionTier) {
+        return
+      }
+      if (filters.customer !== 'all' && invoice.customer?.id !== filters.customer) {
+        return
+      }
       
-      if (contractStart <= today && contractEnd > today) {
-        const contractStartMonth = new Date(contractStart.getFullYear(), contractStart.getMonth(), 1)
-        const contractEndMonth = new Date(contractEnd.getFullYear(), contractEnd.getMonth(), 1)
-        
-        let totalMonths = 0
-        let currentMonth = new Date(contractStart.getFullYear(), contractStart.getMonth(), 1)
-        
-        while (currentMonth < contractEndMonth) {
-          totalMonths++
-          currentMonth = addMonths(currentMonth, 1)
-        }
-        
-        currentMRR += totalValue / totalMonths
+      if (!invoice.servicePeriodStart || !invoice.servicePeriodEnd) {
+        return
+      }
+      
+      const servicePeriodStart = new Date(invoice.servicePeriodStart)
+      const servicePeriodEnd = new Date(invoice.servicePeriodEnd)
+      const totalAmount = invoice.totalAmount || 0
+      
+      const totalDays = Math.max(1, Math.floor((servicePeriodEnd.getTime() - servicePeriodStart.getTime()) / (1000 * 60 * 60 * 24)))
+      const dailyRate = totalAmount / totalDays
+      
+      const overlapStart = currentMonthStart > servicePeriodStart ? currentMonthStart : servicePeriodStart
+      const overlapEnd = currentMonthEnd < servicePeriodEnd ? currentMonthEnd : servicePeriodEnd
+      
+      if (overlapEnd > overlapStart) {
+        const overlapDays = Math.floor((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24)) + 1
+        const monthlyRevenue = dailyRate * overlapDays
+        currentMRR += monthlyRevenue
       }
     })
     
@@ -159,22 +172,38 @@ export default function RevenueRecognitionPage() {
       }
       
       if (!isFuture) {
-        // Calculate actual revenue from invoices for this month
+        // Calculate actual revenue from invoices based on service periods
         const invoices = queryData?.invoices || []
         invoices.forEach((invoice: any) => {
-          const invoiceDate = new Date(invoice.invoiceDate)
-          const invoiceMonth = startOfMonth(invoiceDate)
+          // Apply filters
+          if (filters.subscriptionTier !== 'all' && invoice.contract?.subscriptionTier?.id !== filters.subscriptionTier) {
+            return
+          }
+          if (filters.customer !== 'all' && invoice.customer?.id !== filters.customer) {
+            return
+          }
           
-          // Check if invoice belongs to this month and matches filters
-          if (invoiceMonth.getTime() === monthStart.getTime()) {
-            if (filters.subscriptionTier !== 'all' && invoice.contract?.subscriptionTier?.id !== filters.subscriptionTier) {
-              return
-            }
-            if (filters.customer !== 'all' && invoice.customer?.id !== filters.customer) {
-              return
-            }
-            
-            monthRevenue += invoice.totalAmount || 0
+          // Check if invoice has service period dates
+          if (!invoice.servicePeriodStart || !invoice.servicePeriodEnd) {
+            return
+          }
+          
+          const servicePeriodStart = new Date(invoice.servicePeriodStart)
+          const servicePeriodEnd = new Date(invoice.servicePeriodEnd)
+          const totalAmount = invoice.totalAmount || 0
+          
+          // Calculate total days in service period
+          const totalDays = Math.max(1, Math.floor((servicePeriodEnd.getTime() - servicePeriodStart.getTime()) / (1000 * 60 * 60 * 24)))
+          const dailyRate = totalAmount / totalDays
+          
+          // Calculate overlap between this month and the service period
+          const overlapStart = monthStart > servicePeriodStart ? monthStart : servicePeriodStart
+          const overlapEnd = monthEnd < servicePeriodEnd ? monthEnd : servicePeriodEnd
+          
+          if (overlapEnd > overlapStart) {
+            const overlapDays = Math.floor((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24)) + 1
+            const monthlyRevenue = dailyRate * overlapDays
+            monthRevenue += monthlyRevenue
           }
         })
       }

@@ -6,7 +6,7 @@ import { TrendingUp, TrendingDown, DollarSign, Users, FileText } from "lucide-re
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { db } from "@/lib/db"
 import { useMemo } from "react"
-import { startOfMonth, subMonths, addMonths, format } from "date-fns"
+import { startOfMonth, endOfMonth, subMonths, addMonths, format } from "date-fns"
 
 export default function DashboardPage() {
   const { isLoading, error, data: queryData } = db.useQuery({
@@ -14,6 +14,9 @@ export default function DashboardPage() {
     contracts: {},
     invoices: {
       customer: {},
+      contract: {
+        subscriptionTier: {},
+      },
       payments: {},
     },
     revenueSchedules: {},
@@ -62,27 +65,30 @@ export default function DashboardPage() {
     const daysInYear = 365
     const annualizedRevenue = daysIntoYear > 0 ? (revenueRecognizedThisYear / daysIntoYear) * daysInYear : 0
     
-    // Calculate current MRR from active contracts
-    const activeContractsList = contracts.filter((c: any) => c.status === 'ACTIVE')
+    // Calculate current MRR from invoices for the current month (matching Revenue Recognition)
+    const currentMonthStart = startOfMonth(today)
+    const currentMonthEnd = endOfMonth(today)
     let currentMRR = 0
-    activeContractsList.forEach((contract: any) => {
-      const contractStart = new Date(contract.startDate)
-      const contractEnd = new Date(contract.endDate)
-      const totalValue = contract.totalContractValue || 0
+    
+    invoices.forEach((invoice: any) => {
+      if (!invoice.servicePeriodStart || !invoice.servicePeriodEnd) {
+        return
+      }
       
-      if (contractStart <= today && contractEnd > today) {
-        const contractStartMonth = new Date(contractStart.getFullYear(), contractStart.getMonth(), 1)
-        const contractEndMonth = new Date(contractEnd.getFullYear(), contractEnd.getMonth(), 1)
-        
-        let totalMonths = 0
-        let currentMonth = new Date(contractStart.getFullYear(), contractStart.getMonth(), 1)
-        
-        while (currentMonth < contractEndMonth) {
-          totalMonths++
-          currentMonth = addMonths(currentMonth, 1)
-        }
-        
-        currentMRR += totalValue / totalMonths
+      const servicePeriodStart = new Date(invoice.servicePeriodStart)
+      const servicePeriodEnd = new Date(invoice.servicePeriodEnd)
+      const totalAmount = invoice.totalAmount || 0
+      
+      const totalDays = Math.max(1, Math.floor((servicePeriodEnd.getTime() - servicePeriodStart.getTime()) / (1000 * 60 * 60 * 24)))
+      const dailyRate = totalAmount / totalDays
+      
+      const overlapStart = currentMonthStart > servicePeriodStart ? currentMonthStart : servicePeriodStart
+      const overlapEnd = currentMonthEnd < servicePeriodEnd ? currentMonthEnd : servicePeriodEnd
+      
+      if (overlapEnd > overlapStart) {
+        const overlapDays = Math.floor((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24)) + 1
+        const monthlyRevenue = dailyRate * overlapDays
+        currentMRR += monthlyRevenue
       }
     })
     
@@ -338,10 +344,8 @@ export default function DashboardPage() {
                 <span className="text-base font-semibold text-slate-900">{formatCurrency(deferredRevenue)}</span>
               </div>
               <div className="flex justify-between items-center p-3 rounded bg-slate-50 border border-slate-100">
-                <span className="text-sm font-medium text-slate-600">AR Reserve Coverage</span>
-                <span className="text-base font-semibold text-slate-900">
-                  {((totalReserve / totalAR) * 100).toFixed(1)}%
-                </span>
+                <span className="text-sm font-medium text-slate-600">Current MRR</span>
+                <span className="text-base font-semibold text-slate-900">{formatCurrency(currentMRR)}</span>
               </div>
               <div className="flex justify-between items-center p-3 rounded bg-slate-50 border border-slate-100">
                 <span className="text-sm font-medium text-slate-600">Days Sales Outstanding</span>
