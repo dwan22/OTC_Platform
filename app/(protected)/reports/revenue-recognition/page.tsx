@@ -230,17 +230,21 @@ export default function RevenueRecognitionPage() {
         
         // Apply growth assumptions on top of base forecast
         const monthsFromToday = i
+        // Use baseForecast if available, otherwise use currentMRR as starting point
         let projectedMRR = baseForecast > 0 ? baseForecast : currentMRR
         
-        for (let m = 1; m <= monthsFromToday; m++) {
-          const growthFactor = 1 + (monthlyGrowthRate / 100)
-          const churnFactor = 1 - (churnRate / 100)
-          const newRevenue = newContractsPerMonth * (newContractValue / 12)
+        // If we have a base to work with, apply growth
+        if (projectedMRR > 0 || newContractsPerMonth > 0) {
+          for (let m = 1; m <= monthsFromToday; m++) {
+            const growthFactor = 1 + (monthlyGrowthRate / 100)
+            const churnFactor = 1 - (churnRate / 100)
+            const newRevenue = newContractsPerMonth * (newContractValue / 12)
+            
+            projectedMRR = (projectedMRR * growthFactor * churnFactor) + newRevenue
+          }
           
-          projectedMRR = (projectedMRR * growthFactor * churnFactor) + newRevenue
+          forecastRevenue = Math.max(0, projectedMRR)
         }
-        
-        forecastRevenue = Math.max(0, projectedMRR)
       }
       
       if (!isFuture) {
@@ -634,6 +638,7 @@ export default function RevenueRecognitionPage() {
                 strokeDasharray="5 5"
                 name="Forecasted Revenue"
                 dot={{ fill: '#3b82f6', r: 4 }}
+                connectNulls={false}
               />
               <defs>
                 <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">

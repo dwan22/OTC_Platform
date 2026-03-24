@@ -396,63 +396,34 @@ export default function DashboardPage() {
         </Card>
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <Card className="border border-slate-200 shadow-sm bg-white">
-          <CardHeader className="border-b border-slate-100">
-            <CardTitle className="text-lg font-semibold tracking-tight text-slate-900">Key Metrics</CardTitle>
-            <CardDescription className="text-slate-500 font-light">Financial health indicators</CardDescription>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div className="space-y-3">
-              <div className="flex justify-between items-center p-3 rounded bg-slate-50 border border-slate-100">
-                <span className="text-sm font-medium text-slate-600">Deferred Revenue</span>
-                <span className="text-base font-semibold text-slate-900">{formatCurrency(deferredRevenue)}</span>
-              </div>
-              <div className="flex justify-between items-center p-3 rounded bg-slate-50 border border-slate-100">
-                <span className="text-sm font-medium text-slate-600">Current MRR</span>
-                <span className="text-base font-semibold text-slate-900">{formatCurrency(currentMRR)}</span>
-              </div>
-              <div className="flex justify-between items-center p-3 rounded bg-slate-50 border border-slate-100">
-                <span className="text-sm font-medium text-slate-600">Days Sales Outstanding</span>
-                <span className="text-base font-semibold text-slate-900">32 days</span>
-              </div>
-              <div className="flex justify-between items-center p-3 rounded bg-slate-50 border border-slate-100">
-                <span className="text-sm font-medium text-slate-600">Collection Rate</span>
-                <span className="text-base font-semibold text-emerald-700">94.2%</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border border-slate-200 shadow-sm bg-white">
-          <CardHeader className="border-b border-slate-100">
-            <CardTitle className="text-lg font-semibold tracking-tight text-slate-900">Recent Invoices</CardTitle>
-            <CardDescription className="text-slate-500 font-light">Latest billing activity</CardDescription>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div className="space-y-2">
-              {recentInvoices.map((invoice: any) => (
-                <div key={invoice.id} className="flex justify-between items-center p-3 rounded hover:bg-slate-50 transition-colors border border-slate-200">
-                  <div>
-                    <div className="text-sm font-medium text-slate-900">{invoice.customerName}</div>
-                    <div className="text-xs text-slate-500 font-light">{invoice.invoiceNumber}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-semibold text-slate-900">{formatCurrency(invoice.totalAmount)}</div>
-                    <div className={`text-xs font-semibold ${
-                      invoice.status === 'PAID' ? 'text-emerald-700' :
-                      invoice.status === 'OVERDUE' ? 'text-red-700' :
-                      'text-amber-700'
-                    }`}>
-                      {invoice.status}
-                    </div>
+      <Card className="border border-slate-200 shadow-sm bg-white">
+        <CardHeader className="border-b border-slate-100">
+          <CardTitle className="text-lg font-semibold tracking-tight text-slate-900">Recent Invoices</CardTitle>
+          <CardDescription className="text-slate-500 font-light">Latest billing activity</CardDescription>
+        </CardHeader>
+        <CardContent className="pt-6">
+          <div className="space-y-2">
+            {recentInvoices.map((invoice: any) => (
+              <div key={invoice.id} className="flex justify-between items-center p-3 rounded hover:bg-slate-50 transition-colors border border-slate-200">
+                <div>
+                  <div className="text-sm font-medium text-slate-900">{invoice.customerName}</div>
+                  <div className="text-xs text-slate-500 font-light">{invoice.invoiceNumber}</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm font-semibold text-slate-900">{formatCurrency(invoice.totalAmount)}</div>
+                  <div className={`text-xs font-semibold ${
+                    invoice.status === 'PAID' ? 'text-emerald-700' :
+                    invoice.status === 'OVERDUE' ? 'text-red-700' :
+                    'text-amber-700'
+                  }`}>
+                    {invoice.status}
                   </div>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
