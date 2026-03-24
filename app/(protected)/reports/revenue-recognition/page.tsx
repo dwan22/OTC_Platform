@@ -175,76 +175,55 @@ export default function RevenueRecognitionPage() {
       const isFuture = monthStart > today
       
       if (isFuture) {
-        // Calculate base forecast from outstanding contract amounts for this future month
+        // Calculate base forecast from contracts amortized over their life
         let baseForecast = 0
         
-        // Calculate revenue from existing invoices that extend into this future month
-        invoices.forEach((invoice: any) => {
-          if (filters.subscriptionTier !== 'all' && invoice.contract?.subscriptionTier?.id !== filters.subscriptionTier) {
-            return
-          }
-          if (filters.customer !== 'all' && invoice.customer?.id !== filters.customer) {
-            return
-          }
+        // Calculate revenue from active contracts that extend into this future month
+        contracts.forEach((contract: any) => {
+          if (contract.status === 'VOID') return
           
-          if (!invoice.servicePeriodStart || !invoice.servicePeriodEnd) {
-            return
-          }
+          const contractStart = new Date(contract.startDate)
+          const contractEnd = new Date(contract.endDate)
+          const totalValue = contract.totalContractValue || 0
           
-          const servicePeriodStart = new Date(invoice.servicePeriodStart)
-          const servicePeriodEnd = new Date(invoice.servicePeriodEnd)
-          const totalAmount = invoice.totalAmount || 0
-          
-          // Check if this invoice's service period covers this future month
-          if (servicePeriodStart <= monthEnd && servicePeriodEnd >= monthStart) {
-            const isMonthAligned = servicePeriodStart.getDate() === 1 && 
-                                   servicePeriodEnd.getDate() === new Date(servicePeriodEnd.getFullYear(), servicePeriodEnd.getMonth() + 1, 0).getDate()
+          // Check if this contract's period covers this future month
+          if (contractStart <= monthEnd && contractEnd > monthStart) {
+            // Calculate total months in contract
+            const contractStartMonth = new Date(contractStart.getFullYear(), contractStart.getMonth(), 1)
+            const contractEndMonth = new Date(contractEnd.getFullYear(), contractEnd.getMonth(), 1)
             
-            if (isMonthAligned) {
-              let monthCount = 0
-              let currentMonth = startOfMonth(servicePeriodStart)
-              const endMonth = startOfMonth(servicePeriodEnd)
-              
-              while (currentMonth <= endMonth) {
-                monthCount++
-                currentMonth = addMonths(currentMonth, 1)
-              }
-              
-              if (monthStart >= startOfMonth(servicePeriodStart) && monthStart <= endMonth) {
-                baseForecast += totalAmount / monthCount
-              }
-            } else {
-              const totalDays = Math.max(1, Math.floor((servicePeriodEnd.getTime() - servicePeriodStart.getTime()) / (1000 * 60 * 60 * 24)))
-              const dailyRate = totalAmount / totalDays
-              
-              const overlapStart = monthStart > servicePeriodStart ? monthStart : servicePeriodStart
-              const overlapEnd = monthEnd < servicePeriodEnd ? monthEnd : servicePeriodEnd
-              
-              if (overlapEnd > overlapStart) {
-                const overlapDays = Math.floor((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24)) + 1
-                baseForecast += dailyRate * overlapDays
-              }
+            let totalMonths = 0
+            let currentMonth = new Date(contractStart.getFullYear(), contractStart.getMonth(), 1)
+            
+            while (currentMonth < contractEndMonth) {
+              totalMonths++
+              currentMonth = addMonths(currentMonth, 1)
+            }
+            
+            // Amortize contract value over its life
+            const monthlyAmount = totalValue / totalMonths
+            
+            // Check if this month falls within the contract period
+            if (monthStart >= contractStartMonth && monthStart < contractEndMonth) {
+              baseForecast += monthlyAmount
             }
           }
         })
         
         // Apply growth assumptions on top of base forecast
         const monthsFromToday = i
-        // Use baseForecast if available, otherwise use currentMRR as starting point
-        let projectedMRR = baseForecast > 0 ? baseForecast : currentMRR
+        let projectedMRR = baseForecast
         
-        // If we have a base to work with, apply growth
-        if (projectedMRR > 0 || newContractsPerMonth > 0) {
-          for (let m = 1; m <= monthsFromToday; m++) {
-            const growthFactor = 1 + (monthlyGrowthRate / 100)
-            const churnFactor = 1 - (churnRate / 100)
-            const newRevenue = newContractsPerMonth * (newContractValue / 12)
-            
-            projectedMRR = (projectedMRR * growthFactor * churnFactor) + newRevenue
-          }
+        // Apply growth for each month from today to the target month
+        for (let m = 1; m <= monthsFromToday; m++) {
+          const growthFactor = 1 + (monthlyGrowthRate / 100)
+          const churnFactor = 1 - (churnRate / 100)
+          const newRevenue = newContractsPerMonth * (newContractValue / 12)
           
-          forecastRevenue = Math.max(0, projectedMRR)
+          projectedMRR = (projectedMRR * growthFactor * churnFactor) + newRevenue
         }
+        
+        forecastRevenue = Math.max(0, projectedMRR)
       }
       
       if (!isFuture) {
