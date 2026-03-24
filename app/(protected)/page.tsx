@@ -6,7 +6,7 @@ import { TrendingUp, TrendingDown, DollarSign, Users, FileText } from "lucide-re
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { db } from "@/lib/db"
 import { useMemo } from "react"
-import { startOfMonth, subMonths, format } from "date-fns"
+import { startOfMonth, subMonths, addMonths, format } from "date-fns"
 
 export default function DashboardPage() {
   const { isLoading, error, data: queryData } = db.useQuery({
@@ -30,16 +30,82 @@ export default function DashboardPage() {
     const customerCount = customers.length
     const activeContracts = contracts.filter((c: any) => c.status === 'ACTIVE').length
     
-    const activeContractsList = contracts.filter((c: any) => c.status === 'ACTIVE')
-    const arr = activeContractsList.reduce((sum: number, c: any) => {
-      const monthlyValue = c.totalContractValue / 12
-      return sum + (monthlyValue * 12)
-    }, 0)
+    // Calculate annualized revenue recognized to date
+    const today = new Date()
+    const yearStart = new Date(today.getFullYear(), 0, 1)
     
-    const currentMRR = arr / 12
+    // Calculate revenue recognized this year from contracts
+    let revenueRecognizedThisYear = 0
+    contracts.forEach((contract: any) => {
+      const startDate = new Date(contract.startDate)
+      const endDate = new Date(contract.endDate)
+      const totalValue = contract.totalContractValue || 0
+      
+      if (endDate < yearStart || startDate > today) {
+        return
+      }
+      
+      const totalDays = Math.max(1, Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)))
+      const dailyRate = totalValue / totalDays
+      
+      const recognitionStart = startDate > yearStart ? startDate : yearStart
+      const recognitionEnd = endDate < today ? endDate : today
+      
+      if (recognitionEnd > recognitionStart) {
+        const daysRecognized = Math.floor((recognitionEnd.getTime() - recognitionStart.getTime()) / (1000 * 60 * 60 * 24))
+        revenueRecognizedThisYear += dailyRate * daysRecognized
+      }
+    })
+    
+    // Annualize the revenue (extrapolate to full year)
+    const daysIntoYear = Math.floor((today.getTime() - yearStart.getTime()) / (1000 * 60 * 60 * 24))
+    const daysInYear = 365
+    const annualizedRevenue = daysIntoYear > 0 ? (revenueRecognizedThisYear / daysIntoYear) * daysInYear : 0
+    
+    // Calculate current MRR from active contracts
+    const activeContractsList = contracts.filter((c: any) => c.status === 'ACTIVE')
+    let currentMRR = 0
+    activeContractsList.forEach((contract: any) => {
+      const contractStart = new Date(contract.startDate)
+      const contractEnd = new Date(contract.endDate)
+      const totalValue = contract.totalContractValue || 0
+      
+      if (contractStart <= today && contractEnd > today) {
+        const contractStartMonth = new Date(contractStart.getFullYear(), contractStart.getMonth(), 1)
+        const contractEndMonth = new Date(contractEnd.getFullYear(), contractEnd.getMonth(), 1)
+        
+        let totalMonths = 0
+        let currentMonth = new Date(contractStart.getFullYear(), contractStart.getMonth(), 1)
+        
+        while (currentMonth < contractEndMonth) {
+          totalMonths++
+          currentMonth = addMonths(currentMonth, 1)
+        }
+        
+        currentMRR += totalValue / totalMonths
+      }
+    })
+    
+    // Calculate forecasted revenue (12 months out) using default assumptions
+    const monthlyGrowthRate = 5.0
+    const churnRate = 2.0
+    const newContractValue = 50000
+    const newContractsPerMonth = 2
+    
+    let projectedMRR = currentMRR
+    let forecastedRevenue = 0
+    
+    for (let m = 1; m <= 12; m++) {
+      const growthFactor = 1 + (monthlyGrowthRate / 100)
+      const churnFactor = 1 - (churnRate / 100)
+      const newRevenue = newContractsPerMonth * (newContractValue / 12)
+      
+      projectedMRR = (projectedMRR * growthFactor * churnFactor) + newRevenue
+      forecastedRevenue += projectedMRR
+    }
+    
     const mrrGrowth = 12.5
     
-    const today = new Date()
     const chartData = []
     
     for (let i = 5; i >= 0; i--) {
@@ -103,7 +169,8 @@ export default function DashboardPage() {
     return {
       customerCount,
       activeContracts,
-      arr,
+      annualizedRevenue,
+      forecastedRevenue,
       currentMRR,
       mrrGrowth,
       chartData,
@@ -142,7 +209,7 @@ export default function DashboardPage() {
     )
   }
   
-  const { customerCount, activeContracts, arr, currentMRR, mrrGrowth, chartData, agingChartData, totalAR, totalReserve, recentInvoices, deferredRevenue } = data
+  const { customerCount, activeContracts, annualizedRevenue, forecastedRevenue, currentMRR, mrrGrowth, chartData, agingChartData, totalAR, totalReserve, recentInvoices, deferredRevenue } = data
   
   return (
     <div className="p-8">
@@ -155,41 +222,37 @@ export default function DashboardPage() {
         <Card className="card-hover border border-slate-200 shadow-sm overflow-hidden relative bg-white">
           <div className="absolute inset-0 gradient-primary opacity-[0.02] pointer-events-none"></div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative border-b border-slate-100">
-            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-slate-500">Annual Recurring Revenue</CardTitle>
+            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-slate-500">Annualized Revenue (YTD)</CardTitle>
             <div className="p-1.5 rounded bg-slate-100">
               <DollarSign className="h-4 w-4 text-slate-700" />
             </div>
           </CardHeader>
           <CardContent className="relative pt-4">
-            <div className="text-3xl font-semibold tracking-tight text-slate-900">{formatCurrency(arr)}</div>
+            <div className="text-3xl font-semibold tracking-tight text-slate-900">{formatCurrency(annualizedRevenue)}</div>
             <p className="text-xs text-slate-500 mt-2 font-light">
-              MRR: {formatCurrency(currentMRR)}
+              Revenue recognized to date, annualized
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card className="card-hover border border-slate-200 shadow-sm overflow-hidden relative bg-white">
+          <div className="absolute inset-0 gradient-info opacity-[0.02] pointer-events-none"></div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative border-b border-slate-100">
+            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-slate-500">Forecasted Revenue (12M)</CardTitle>
+            <div className="p-1.5 rounded bg-blue-100">
+              <DollarSign className="h-4 w-4 text-blue-700" />
+            </div>
+          </CardHeader>
+          <CardContent className="relative pt-4">
+            <div className="text-3xl font-semibold tracking-tight text-blue-700">{formatCurrency(forecastedRevenue)}</div>
+            <p className="text-xs text-slate-500 mt-2 font-light">
+              Based on forecast assumptions
             </p>
           </CardContent>
         </Card>
         
         <Card className="card-hover border border-slate-200 shadow-sm overflow-hidden relative bg-white">
           <div className="absolute inset-0 gradient-success opacity-[0.02] pointer-events-none"></div>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative border-b border-slate-100">
-            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-slate-500">MRR Growth</CardTitle>
-            <div className={`p-1.5 rounded ${mrrGrowth >= 0 ? 'bg-emerald-50' : 'bg-red-50'}`}>
-              {mrrGrowth >= 0 ? (
-                <TrendingUp className="h-4 w-4 text-emerald-700" />
-              ) : (
-                <TrendingDown className="h-4 w-4 text-red-700" />
-              )}
-            </div>
-          </CardHeader>
-          <CardContent className="relative pt-4">
-            <div className={`text-3xl font-semibold tracking-tight ${mrrGrowth >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
-              {mrrGrowth >= 0 ? '+' : ''}{mrrGrowth.toFixed(1)}%
-            </div>
-            <p className="text-xs text-slate-500 mt-2 font-light">vs previous month</p>
-          </CardContent>
-        </Card>
-        
-        <Card className="card-hover border border-slate-200 shadow-sm overflow-hidden relative bg-white">
-          <div className="absolute inset-0 gradient-info opacity-[0.02] pointer-events-none"></div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative border-b border-slate-100">
             <CardTitle className="text-xs font-semibold uppercase tracking-wider text-slate-500">Active Customers</CardTitle>
             <div className="p-1.5 rounded bg-slate-100">

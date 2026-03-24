@@ -29,8 +29,6 @@ export default function BalanceSheetPage() {
         customer: {},
       },
     },
-    arReserves: {},
-    journalEntries: {},
     customers: {},
     subscriptionTiers: {},
   })
@@ -41,8 +39,6 @@ export default function BalanceSheetPage() {
     let invoices = queryData.invoices || []
     const payments = queryData.payments || []
     let schedules = queryData.revenueSchedules || []
-    const reserves = queryData.arReserves || []
-    const entries = queryData.journalEntries || []
     
     if (filters.subscriptionTier && filters.subscriptionTier !== 'all') {
       invoices = invoices.filter((inv: any) => inv.contract?.subscriptionTier?.id === filters.subscriptionTier)
@@ -96,28 +92,6 @@ export default function BalanceSheetPage() {
     const totalLiabilities = totalDeferredRevenue
     const totalEquity = totalAssets - totalLiabilities
     
-    const accountMap = new Map()
-    
-    entries.forEach((entry: any) => {
-      const key = entry.accountCode
-      if (!accountMap.has(key)) {
-        accountMap.set(key, {
-          accountCode: entry.accountCode,
-          accountName: entry.accountName,
-          debitTotal: 0,
-          creditTotal: 0,
-        })
-      }
-      const account = accountMap.get(key)
-      account.debitTotal += entry.debitAmount
-      account.creditTotal += entry.creditAmount
-    })
-    
-    const trialBalance = Array.from(accountMap.values()).map(account => ({
-      ...account,
-      balance: account.debitTotal - account.creditTotal,
-    }))
-    
     return {
       totalCash,
       totalAR,
@@ -127,7 +101,6 @@ export default function BalanceSheetPage() {
       totalAssets,
       totalLiabilities,
       totalEquity,
-      trialBalance,
       deferredRevenue,
     }
   }, [queryData, filters])
@@ -159,7 +132,7 @@ export default function BalanceSheetPage() {
     )
   }
   
-  const { totalCash, totalAR, netAR, totalReserve, totalDeferredRevenue, totalAssets, totalLiabilities, totalEquity, trialBalance, deferredRevenue } = data
+  const { totalCash, totalAR, netAR, totalReserve, totalDeferredRevenue, totalAssets, totalLiabilities, totalEquity, deferredRevenue } = data
   
   const customers = queryData?.customers || []
   const subscriptionTiers = queryData?.subscriptionTiers || []
@@ -400,39 +373,6 @@ export default function BalanceSheetPage() {
           </CardContent>
         </Card>
       </div>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Trial Balance</CardTitle>
-          <CardDescription>General ledger account balances</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Account Code</TableHead>
-                <TableHead>Account Name</TableHead>
-                <TableHead className="text-right">Debit Total</TableHead>
-                <TableHead className="text-right">Credit Total</TableHead>
-                <TableHead className="text-right">Balance</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {trialBalance.map((account: any) => (
-                <TableRow key={account.accountCode}>
-                  <TableCell className="font-medium">{account.accountCode}</TableCell>
-                  <TableCell>{account.accountName}</TableCell>
-                  <TableCell className="text-right">{formatCurrency(account.debitTotal)}</TableCell>
-                  <TableCell className="text-right">{formatCurrency(account.creditTotal)}</TableCell>
-                  <TableCell className={`text-right font-medium ${account.balance < 0 ? 'text-red-600' : ''}`}>
-                    {formatCurrency(Math.abs(account.balance))}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
     </div>
   )
 }
