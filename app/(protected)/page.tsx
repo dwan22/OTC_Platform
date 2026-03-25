@@ -33,12 +33,57 @@ export default function DashboardPage() {
     const customerCount = customers.length
     const activeContracts = contracts.filter((c: any) => c.status === 'ACTIVE').length
     
-    // Calculate current monthly revenue from active contracts
+    // Calculate revenue recognized year-to-date (from Jan 1 to today)
     const today = new Date()
+    const yearStart = new Date(today.getFullYear(), 0, 1) // January 1 of current year
+    
+    let revenueRecognizedYTD = 0
+    
+    contracts.forEach((contract: any) => {
+      if (contract.status === 'VOID') return
+      
+      const contractStart = new Date(contract.startDate)
+      const contractEnd = new Date(contract.endDate)
+      const totalValue = contract.totalContractValue || 0
+      
+      // Calculate total months in contract
+      const contractStartMonth = new Date(contractStart.getFullYear(), contractStart.getMonth(), 1)
+      const contractEndMonth = new Date(contractEnd.getFullYear(), contractEnd.getMonth(), 1)
+      
+      let totalMonths = 0
+      let currentMonth = new Date(contractStart.getFullYear(), contractStart.getMonth(), 1)
+      
+      while (currentMonth < contractEndMonth) {
+        totalMonths++
+        currentMonth = addMonths(currentMonth, 1)
+      }
+      
+      // Amortize contract value over its life
+      const monthlyAmount = totalValue / totalMonths
+      
+      // Count only COMPLETED months from Jan 1 to today (exclude current month)
+      let recognizedMonths = 0
+      let checkMonth = new Date(yearStart.getFullYear(), yearStart.getMonth(), 1)
+      const todayMonth = new Date(today.getFullYear(), today.getMonth(), 1)
+      
+      while (checkMonth < todayMonth) { // Changed from <= to < to exclude current month
+        // Check if this month falls within the contract period
+        if (checkMonth >= contractStartMonth && checkMonth < contractEndMonth) {
+          recognizedMonths++
+        }
+        checkMonth = addMonths(checkMonth, 1)
+      }
+      
+      revenueRecognizedYTD += monthlyAmount * recognizedMonths
+    })
+    
+    const annualizedRevenue = revenueRecognizedYTD
+    
+    // Calculate current monthly revenue for MRR
+    let currentMonthlyRevenue = 0
+    
     const currentMonthStart = startOfMonth(today)
     const currentMonthEnd = endOfMonth(today)
-    
-    let currentMonthlyRevenue = 0
     
     contracts.forEach((contract: any) => {
       if (contract.status === 'VOID') return
@@ -70,9 +115,6 @@ export default function DashboardPage() {
         }
       }
     })
-    
-    // Annualize the current monthly revenue
-    const annualizedRevenue = currentMonthlyRevenue * 12
     
     // Current MRR is the same as current monthly revenue from contracts
     const currentMRR = currentMonthlyRevenue
@@ -142,10 +184,10 @@ export default function DashboardPage() {
     
     const mrrGrowth = 12.5
     
-    // Calculate historical MRR from contracts for the past 6 months
+    // Calculate historical MRR from contracts for completed months only (exclude current month)
     const chartData = []
     
-    for (let i = 5; i >= 0; i--) {
+    for (let i = 6; i >= 1; i--) { // Changed to start from 6 and go to 1 to exclude current month (i=0)
       const monthDate = subMonths(today, i)
       const monthKey = format(monthDate, 'MMM')
       const monthStart = startOfMonth(monthDate)
@@ -288,7 +330,7 @@ export default function DashboardPage() {
         <Card className="card-hover border border-slate-200 shadow-sm overflow-hidden relative bg-white">
           <div className="absolute inset-0 gradient-primary opacity-[0.02] pointer-events-none"></div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative border-b border-slate-100">
-            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-slate-500">Annualized Revenue (YTD)</CardTitle>
+            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-slate-500">Revenue Recognized YTD</CardTitle>
             <div className="p-1.5 rounded bg-slate-100">
               <DollarSign className="h-4 w-4 text-slate-700" />
             </div>
@@ -296,7 +338,7 @@ export default function DashboardPage() {
           <CardContent className="relative pt-4">
             <div className="text-3xl font-semibold tracking-tight text-slate-900">{formatCurrency(annualizedRevenue)}</div>
             <p className="text-xs text-slate-500 mt-2 font-light">
-              Revenue recognized to date, annualized
+              From January 1 to today
             </p>
           </CardContent>
         </Card>
