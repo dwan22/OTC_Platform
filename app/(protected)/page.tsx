@@ -33,108 +33,116 @@ export default function DashboardPage() {
     const customerCount = customers.length
     const activeContracts = contracts.filter((c: any) => c.status === 'ACTIVE').length
     
-    // Calculate annualized revenue recognized to date
+    // Calculate current monthly revenue from active contracts
     const today = new Date()
-    const yearStart = new Date(today.getFullYear(), 0, 1)
-    
-    // Calculate revenue recognized this year from contracts
-    let revenueRecognizedThisYear = 0
-    contracts.forEach((contract: any) => {
-      const startDate = new Date(contract.startDate)
-      const endDate = new Date(contract.endDate)
-      const totalValue = contract.totalContractValue || 0
-      
-      if (endDate < yearStart || startDate > today) {
-        return
-      }
-      
-      const totalDays = Math.max(1, Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)))
-      const dailyRate = totalValue / totalDays
-      
-      const recognitionStart = startDate > yearStart ? startDate : yearStart
-      const recognitionEnd = endDate < today ? endDate : today
-      
-      if (recognitionEnd > recognitionStart) {
-        const daysRecognized = Math.floor((recognitionEnd.getTime() - recognitionStart.getTime()) / (1000 * 60 * 60 * 24))
-        revenueRecognizedThisYear += dailyRate * daysRecognized
-      }
-    })
-    
-    // Annualize the revenue (extrapolate to full year)
-    const daysIntoYear = Math.floor((today.getTime() - yearStart.getTime()) / (1000 * 60 * 60 * 24))
-    const daysInYear = 365
-    const annualizedRevenue = daysIntoYear > 0 ? (revenueRecognizedThisYear / daysIntoYear) * daysInYear : 0
-    
-    // Calculate current MRR from invoices for the current month (matching Revenue Recognition)
     const currentMonthStart = startOfMonth(today)
     const currentMonthEnd = endOfMonth(today)
-    let currentMRR = 0
     
-    invoices.forEach((invoice: any) => {
-      if (!invoice.servicePeriodStart || !invoice.servicePeriodEnd) {
-        return
-      }
+    let currentMonthlyRevenue = 0
+    
+    contracts.forEach((contract: any) => {
+      if (contract.status === 'VOID') return
       
-      const servicePeriodStart = new Date(invoice.servicePeriodStart)
-      const servicePeriodEnd = new Date(invoice.servicePeriodEnd)
-      const totalAmount = invoice.totalAmount || 0
+      const contractStart = new Date(contract.startDate)
+      const contractEnd = new Date(contract.endDate)
+      const totalValue = contract.totalContractValue || 0
       
-      // Check if service period aligns with calendar months (starts on 1st, ends on last day)
-      const isMonthAligned = servicePeriodStart.getDate() === 1 && 
-                             servicePeriodEnd.getDate() === new Date(servicePeriodEnd.getFullYear(), servicePeriodEnd.getMonth() + 1, 0).getDate()
-      
-      if (isMonthAligned) {
-        // Calculate number of full months in service period
-        let monthCount = 0
-        let currentMonth = startOfMonth(servicePeriodStart)
-        const endMonth = startOfMonth(servicePeriodEnd)
+      // Check if this contract's period covers the current month
+      if (contractStart <= currentMonthEnd && contractEnd > currentMonthStart) {
+        // Calculate total months in contract
+        const contractStartMonth = new Date(contractStart.getFullYear(), contractStart.getMonth(), 1)
+        const contractEndMonth = new Date(contractEnd.getFullYear(), contractEnd.getMonth(), 1)
         
-        while (currentMonth <= endMonth) {
-          monthCount++
+        let totalMonths = 0
+        let currentMonth = new Date(contractStart.getFullYear(), contractStart.getMonth(), 1)
+        
+        while (currentMonth < contractEndMonth) {
+          totalMonths++
           currentMonth = addMonths(currentMonth, 1)
         }
         
-        // Check if current month is within the service period
-        if (currentMonthStart >= startOfMonth(servicePeriodStart) && currentMonthStart <= endMonth) {
-          currentMRR += totalAmount / monthCount
-        }
-      } else {
-        // Use daily rate for non-aligned periods
-        const totalDays = Math.max(1, Math.floor((servicePeriodEnd.getTime() - servicePeriodStart.getTime()) / (1000 * 60 * 60 * 24)))
-        const dailyRate = totalAmount / totalDays
+        // Amortize contract value over its life
+        const monthlyAmount = totalValue / totalMonths
         
-        const overlapStart = currentMonthStart > servicePeriodStart ? currentMonthStart : servicePeriodStart
-        const overlapEnd = currentMonthEnd < servicePeriodEnd ? currentMonthEnd : servicePeriodEnd
-        
-        if (overlapEnd > overlapStart) {
-          const overlapDays = Math.floor((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24)) + 1
-          const monthlyRevenue = dailyRate * overlapDays
-          currentMRR += monthlyRevenue
+        // Check if current month falls within the contract period
+        if (currentMonthStart >= contractStartMonth && currentMonthStart < contractEndMonth) {
+          currentMonthlyRevenue += monthlyAmount
         }
       }
     })
     
-    // Calculate forecasted revenue (12 months out) using default assumptions
+    // Annualize the current monthly revenue
+    const annualizedRevenue = currentMonthlyRevenue * 12
+    
+    // Current MRR is the same as current monthly revenue from contracts
+    const currentMRR = currentMonthlyRevenue
+    
+    // Calculate forecasted revenue (12 months out) using same logic as Revenue Recognition
     const monthlyGrowthRate = 5.0
     const churnRate = 2.0
     const newContractValue = 50000
     const newContractsPerMonth = 2
     
-    let projectedMRR = currentMRR
     let forecastedRevenue = 0
     
-    for (let m = 1; m <= 12; m++) {
-      const growthFactor = 1 + (monthlyGrowthRate / 100)
-      const churnFactor = 1 - (churnRate / 100)
-      const newRevenue = newContractsPerMonth * (newContractValue / 12)
+    // Calculate forecast for next 12 months
+    for (let i = 1; i <= 12; i++) {
+      const monthDate = addMonths(today, i)
+      const monthStart = startOfMonth(monthDate)
+      const monthEnd = endOfMonth(monthDate)
       
-      projectedMRR = (projectedMRR * growthFactor * churnFactor) + newRevenue
-      forecastedRevenue += projectedMRR
+      // Calculate base forecast from contracts amortized over their life for this month
+      let baseForecast = 0
+      
+      contracts.forEach((contract: any) => {
+        if (contract.status === 'VOID') return
+        
+        const contractStart = new Date(contract.startDate)
+        const contractEnd = new Date(contract.endDate)
+        const totalValue = contract.totalContractValue || 0
+        
+        // Check if this contract's period covers this future month
+        if (contractStart <= monthEnd && contractEnd > monthStart) {
+          // Calculate total months in contract
+          const contractStartMonth = new Date(contractStart.getFullYear(), contractStart.getMonth(), 1)
+          const contractEndMonth = new Date(contractEnd.getFullYear(), contractEnd.getMonth(), 1)
+          
+          let totalMonths = 0
+          let currentMonth = new Date(contractStart.getFullYear(), contractStart.getMonth(), 1)
+          
+          while (currentMonth < contractEndMonth) {
+            totalMonths++
+            currentMonth = addMonths(currentMonth, 1)
+          }
+          
+          // Amortize contract value over its life
+          const monthlyAmount = totalValue / totalMonths
+          
+          // Check if this month falls within the contract period
+          if (monthStart >= contractStartMonth && monthStart < contractEndMonth) {
+            baseForecast += monthlyAmount
+          }
+        }
+      })
+      
+      // Apply growth assumptions
+      let adjustmentFactor = 1.0
+      
+      for (let m = 1; m <= i; m++) {
+        const growthFactor = 1 + (monthlyGrowthRate / 100)
+        const churnFactor = 1 - (churnRate / 100)
+        adjustmentFactor *= growthFactor * churnFactor
+      }
+      
+      const newContractRevenue = newContractsPerMonth * i * (newContractValue / 12)
+      const monthForecast = Math.max(0, (baseForecast * adjustmentFactor) + newContractRevenue)
+      
+      forecastedRevenue += monthForecast
     }
     
     const mrrGrowth = 12.5
     
-    // Calculate historical MRR from invoices for the past 6 months
+    // Calculate historical MRR from contracts for the past 6 months
     const chartData = []
     
     for (let i = 5; i >= 0; i--) {
@@ -145,46 +153,33 @@ export default function DashboardPage() {
       
       let monthMRR = 0
       
-      invoices.forEach((invoice: any) => {
-        if (!invoice.servicePeriodStart || !invoice.servicePeriodEnd) {
-          return
-        }
+      contracts.forEach((contract: any) => {
+        if (contract.status === 'VOID') return
         
-        const servicePeriodStart = new Date(invoice.servicePeriodStart)
-        const servicePeriodEnd = new Date(invoice.servicePeriodEnd)
-        const totalAmount = invoice.totalAmount || 0
+        const contractStart = new Date(contract.startDate)
+        const contractEnd = new Date(contract.endDate)
+        const totalValue = contract.totalContractValue || 0
         
-        // Check if service period aligns with calendar months
-        const servicePeriodStartMonth = startOfMonth(servicePeriodStart)
-        const servicePeriodEndMonth = endOfMonth(servicePeriodEnd)
-        
-        const isMonthAligned = servicePeriodStart.getDate() === 1 && 
-                               servicePeriodEnd.getDate() === new Date(servicePeriodEnd.getFullYear(), servicePeriodEnd.getMonth() + 1, 0).getDate()
-        
-        if (isMonthAligned) {
-          let monthCount = 0
-          let currentMonth = startOfMonth(servicePeriodStart)
-          const endMonth = startOfMonth(servicePeriodEnd)
+        // Check if this contract's period covers this month
+        if (contractStart <= monthEnd && contractEnd > monthStart) {
+          // Calculate total months in contract
+          const contractStartMonth = new Date(contractStart.getFullYear(), contractStart.getMonth(), 1)
+          const contractEndMonth = new Date(contractEnd.getFullYear(), contractEnd.getMonth(), 1)
           
-          while (currentMonth <= endMonth) {
-            monthCount++
+          let totalMonths = 0
+          let currentMonth = new Date(contractStart.getFullYear(), contractStart.getMonth(), 1)
+          
+          while (currentMonth < contractEndMonth) {
+            totalMonths++
             currentMonth = addMonths(currentMonth, 1)
           }
           
-          if (monthStart >= servicePeriodStartMonth && monthStart <= endMonth) {
-            monthMRR += totalAmount / monthCount
-          }
-        } else {
-          const totalDays = Math.max(1, Math.floor((servicePeriodEnd.getTime() - servicePeriodStart.getTime()) / (1000 * 60 * 60 * 24)))
-          const dailyRate = totalAmount / totalDays
+          // Amortize contract value over its life
+          const monthlyAmount = totalValue / totalMonths
           
-          const overlapStart = monthStart > servicePeriodStart ? monthStart : servicePeriodStart
-          const overlapEnd = monthEnd < servicePeriodEnd ? monthEnd : servicePeriodEnd
-          
-          if (overlapEnd > overlapStart) {
-            const overlapDays = Math.floor((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24)) + 1
-            const monthlyRevenue = dailyRate * overlapDays
-            monthMRR += monthlyRevenue
+          // Check if this month falls within the contract period
+          if (monthStart >= contractStartMonth && monthStart < contractEndMonth) {
+            monthMRR += monthlyAmount
           }
         }
       })
